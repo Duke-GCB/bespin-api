@@ -149,7 +149,8 @@ class Job(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     name = models.CharField(max_length=255, blank=False, null=False,
                                         help_text="User specified name for this job.")
-
+    fund_code = models.CharField(max_length=255, blank=True, null=True,
+                                 help_text="Fund code this job will be charged to.")
     created = models.DateTimeField(auto_now_add=True, blank=False)
     state = models.CharField(max_length=1, choices=JOB_STATES, default='N',
                              help_text="High level state of the project")
@@ -271,6 +272,8 @@ class JobQuestionnaire(models.Model):
                                       help_text='Size in GB of volume created for running this job')
     share_group = models.ForeignKey(ShareGroup, blank=False, null=False,
                                     help_text='Users who will have job output shared with them')
+    fund_code = models.CharField(max_length=255, blank=True, null=True,
+                                 help_text="Fund code this job will be charged to.")
 
     def __unicode__(self):
         return '{} desc:{}'.format(self.id, self.description)

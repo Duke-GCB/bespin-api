@@ -64,7 +64,7 @@ class JobSerializer(serializers.ModelSerializer):
         resource_name = 'jobs'
         fields = ('id', 'workflow_version', 'user', 'name', 'created', 'state', 'step', 'last_updated',
                   'vm_flavor', 'vm_instance_name', 'vm_volume_name', 'vm_project_name', 'job_order',
-                  'output_dir', 'job_errors', 'stage_group', 'volume_size')
+                  'output_dir', 'job_errors', 'stage_group', 'volume_size', 'fund_code')
 
 
 class UserSerializer(serializers.Serializer):
@@ -83,7 +83,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
         resource_name = 'jobs'
         fields = ('id', 'workflow_version', 'user', 'name', 'created', 'state', 'step', 'last_updated',
                   'vm_flavor', 'vm_instance_name', 'vm_volume_name', 'vm_project_name', 'job_order',
-                  'output_dir', 'stage_group', 'volume_size', 'share_group', 'cleanup_vm')
+                  'output_dir', 'stage_group', 'volume_size', 'share_group', 'cleanup_vm', 'fund_code')
         read_only_fields = ('share_group',)
 
 

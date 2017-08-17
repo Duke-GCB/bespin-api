@@ -33,7 +33,7 @@ class JobFactoryTests(TestCase):
         user_job_order = None
         system_job_order = {}
         job_factory = JobFactory(self.user, None, None, user_job_order, system_job_order, None, None, None, 150,
-                                 self.share_group)
+                                 self.share_group, '123-4')
         with self.assertRaises(JobFactoryException):
             job_factory.create_job()
 
@@ -41,7 +41,7 @@ class JobFactoryTests(TestCase):
         user_job_order = {}
         system_job_order = None
         job_factory = JobFactory(self.user, None, None, user_job_order, system_job_order, None, None, None, 150,
-                                 self.share_group)
+                                 self.share_group, '123-4')
         with self.assertRaises(JobFactoryException):
             job_factory.create_job()
 
@@ -49,7 +49,7 @@ class JobFactoryTests(TestCase):
         user_job_order = {'input1': 'user'}
         system_job_order = {'input2' : 'system'}
         job_factory = JobFactory(self.user, self.workflow_version, self.stage_group, user_job_order, system_job_order,
-                                 'Test Job', 'bespin-project', 'flavor1', 110, self.share_group)
+                                 'Test Job', 'bespin-project', 'flavor1', 110, self.share_group, '123-4')
         job = job_factory.create_job()
         self.assertEqual(job.user, self.user)
         self.assertEqual(job.workflow_version, self.workflow_version)
@@ -61,12 +61,13 @@ class JobFactoryTests(TestCase):
         self.assertEqual(self.worker_cred.id, job.output_dir.dds_user_credentials.id)
         self.assertEqual(job.volume_size, 110)
         self.assertEqual(job.share_group, self.share_group)
+        self.assertEqual(job.fund_code, '123-4')
 
     def test_favors_user_inputs(self):
         user_job_order = {'input1': 'user'}
         system_job_order = {'input1' : 'system'}
         job_factory = JobFactory(self.user, self.workflow_version, self.stage_group, user_job_order, system_job_order,
-                                 'Test Job', 'bespin-project', 'flavor1', 120, self.share_group)
+                                 'Test Job', 'bespin-project', 'flavor1', 120, self.share_group, '123-4')
         job = job_factory.create_job()
         expected_job_order = json.dumps({'input1':'user'})
         self.assertEqual(expected_job_order, job.job_order)
