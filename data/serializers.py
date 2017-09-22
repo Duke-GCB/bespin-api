@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobOutputDir, URLJobInputFile, JobError, JobAnswerSet, \
-    JobQuestionnaire, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser
+    JobQuestionnaire, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument
 
 
 class WorkflowSerializer(serializers.ModelSerializer):
@@ -21,7 +21,15 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkflowVersion
         resource_name = 'workflow-versions'
-        fields = ('id', 'workflow', 'name', 'description', 'object_name', 'created', 'url', 'version')
+        fields = ('id', 'workflow', 'name', 'description', 'object_name', 'created', 'url', 'version',
+                  'methods_document')
+
+
+class WorkflowMethodsDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkflowMethodsDocument
+        resource_name = 'workflow-methods-documents'
+        fields = ('id', 'workflow_version', 'content')
 
 
 class JobOutputDirSerializer(serializers.ModelSerializer):

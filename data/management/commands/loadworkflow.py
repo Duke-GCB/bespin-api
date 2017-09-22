@@ -1,11 +1,16 @@
 from django.core.management.base import BaseCommand
 from argparse import FileType
-from data.models import Workflow, WorkflowVersion, JobQuestionnaire, VMFlavor, VMProject, ShareGroup
+from data.models import Workflow, WorkflowVersion, JobQuestionnaire, VMFlavor, VMProject, ShareGroup, WorkflowMethodsDocument
 from cwltool.load_tool import load_tool
 from cwltool.workflow import defaultMakeTool
 from _private import BaseCreator
 import json
 import sys
+import requests
+from habanero import cn
+from jinja2 import Template
+SCHEMA_ORG_CITATION = 'https://schema.org/citation'
+HTTPS_DOI_URL = 'https://dx.doi.org/'
 
 
 class CWLDocument(object):
@@ -46,6 +51,50 @@ class CWLDocument(object):
         :return: value associated with the key in the parsed CWL
         """
         return self.parsed.tool.get(key)
+
+    def extract_tool_hints(self, hint_class_name):
+        """
+        Retreieve all tool hints that have the specified class name
+        :param hint_class_name: str: name of the class to include
+        :return: [dict]: list of hints
+        """
+        hints = []
+        self._extract_tool_hints_recursive(hints, self.parsed, hint_class_name)
+        return hints
+
+    def _extract_tool_hints_recursive(self, hints, workflow_node, hint_class_name):
+        if hasattr(workflow_node, 'steps'):
+            for step in workflow_node.steps:
+                self._extract_tool_hints_recursive(hints, step.embedded_tool, hint_class_name=hint_class_name)
+        else:
+            if workflow_node.hints:
+                for hint in workflow_node.hints:
+                    if hint['class'] == hint_class_name:
+                        hints.append(hint)
+
+
+class MethodsDocumentContents(object):
+    def __init__(self, software_requirement_hints, jinja_template_url):
+        self.software_requirement_hints = software_requirement_hints
+        self.jinja_template_url = jinja_template_url
+
+    def get_content(self):
+        template_args = {}
+        for hint in self.software_requirement_hints:
+            for package in hint['packages']:
+                package_name = package['package']
+                versions = package['version']
+                citation = package[SCHEMA_ORG_CITATION]
+                if citation.startswith(HTTPS_DOI_URL):
+                    doi_name = citation.replace(HTTPS_DOI_URL, '')
+                    apa_citation = cn.content_negotiation(ids=doi_name, format="text", style="apa")
+                else:
+                    apa_citation = citation
+                template_args[package_name] = {'version': versions[-1], 'citation': apa_citation}
+        response = requests.get(self.jinja_template_url)
+        response.raise_for_status()
+        template = Template(response.text)
+        return template.render(**template_args)
 
 
 class JobQuestionnaireImporter(BaseCreator):
@@ -128,6 +177,7 @@ class WorkflowImporter(BaseCreator):
     def __init__(self,
                  cwl_url,
                  version_number=1,
+                 methods_jinja_template_url=None,
                  stdout=sys.stdout,
                  stderr=sys.stderr):
         """
@@ -140,6 +190,7 @@ class WorkflowImporter(BaseCreator):
         super(WorkflowImporter, self).__init__(stdout, stderr)
         self.cwl_url = cwl_url
         self.version_number = version_number
+        self.methods_jinja_template_url = methods_jinja_template_url
         # django model objects built up
         self.workflow = None
         self.workflow_version = None
@@ -157,6 +208,13 @@ class WorkflowImporter(BaseCreator):
             url=self.cwl_url,
             description=workflow_version_description,
             version=self.version_number,
+        )
+        software_requirement_hints = document.extract_tool_hints(hint_class_name="SoftwareRequirement")
+        methods_document = MethodsDocumentContents(software_requirement_hints,
+                                                   jinja_template_url=self.methods_jinja_template_url)
+        WorkflowMethodsDocument.objects.get_or_create(
+            workflow_version=workflow_version,
+            content=methods_document.get_content(),
         )
         self.log_creation(created, 'Workflow Version', workflow_version_description, workflow_version.id)
         self.workflow = workflow
@@ -186,10 +244,13 @@ class Command(BaseCommand):
         parser.add_argument('share-group', help='Name of Share group to attach to the job questionnaire')
         parser.add_argument('volume-size-base', help='Base volume size (in GB) used for this workflow.')
         parser.add_argument('volume-size-factor', help='Integer factor multiplied by input data size when running this workflow.')
+        parser.add_argument('methods-jinja-template-url',
+                            help='URL that references a jinja2 template used to build the methods markdown file for this workflow.')
 
     def handle(self, *args, **options):
         wf_importer = WorkflowImporter(options.get('cwl-url'),
                                        version_number=options.get('version-number'),
+                                       methods_jinja_template_url=options.get('methods-jinja-template-url'),
                                        stdout=self.stdout,
                                        stderr=self.stderr)
         wf_importer.run()

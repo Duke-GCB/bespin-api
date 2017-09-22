@@ -18,6 +18,7 @@ router.register(r'job-output-dirs', api.JobOutputDirViewSet, 'joboutputdir')
 router.register(r'job-questionnaires', api.JobQuestionnaireViewSet, 'jobquestionnaire')
 router.register(r'job-answer-sets', api.JobAnswerSetViewSet, 'jobanswerset')
 router.register(r'share-groups', api.ShareGroupViewSet, 'sharegroup')
+router.register(r'workflow-methods-documents', api.WorkflowMethodsDocumentViewSet, 'workflowmethodsdocument')
 
 # Routes that require admin user
 router.register(r'admin/jobs', api.AdminJobsViewSet, 'admin_job')
@@ -27,6 +28,8 @@ router.register(r'admin/dds-user-credentials', api.AdminDDSUserCredentialsViewSe
 router.register(r'admin/job-errors', api.AdminJobErrorViewSet, 'admin_joberror')
 router.register(r'admin/job-output-dirs', api.AdminJobOutputDirViewSet, 'admin_joboutputdir')
 router.register(r'admin/share-groups', api.AdminShareGroupViewSet, 'admin_sharegroup')
+router.register(r'admin/workflow-methods-documents', api.WorkflowMethodsDocumentViewSet,
+                'admin_workflowmethodsdocument')
 
 urlpatterns = [
     url(r'^', include(router.urls)),

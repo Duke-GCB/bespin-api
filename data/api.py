@@ -3,7 +3,7 @@ from util import get_user_projects, get_user_project, get_user_project_content, 
 from rest_framework.response import Response
 from exceptions import DataServiceUnavailable, WrappedDataServiceException, BespinAPIException, JobTokenException
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
-    DDSEndpoint, DDSUserCredential, URLJobInputFile, JobError, JobOutputDir, JobToken
+    DDSEndpoint, DDSUserCredential, URLJobInputFile, JobError, JobOutputDir, JobToken, WorkflowMethodsDocument
 from django.db import IntegrityError
 
 from data.serializers import *
@@ -75,6 +75,12 @@ class WorkflowVersionsViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = WorkflowVersionSerializer
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('workflow',)
+
+
+class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = (permissions.IsAuthenticated,)
+    queryset = WorkflowMethodsDocument.objects.all()
+    serializer_class = WorkflowMethodsDocumentSerializer
 
 
 class JobsViewSet(mixins.RetrieveModelMixin,

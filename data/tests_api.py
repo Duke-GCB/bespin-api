@@ -7,7 +7,8 @@ import json
 
 from data.models import Workflow, WorkflowVersion, Job, JobFileStageGroup, JobError, \
     DDSUserCredential, DDSEndpoint, DDSJobInputFile, URLJobInputFile, JobOutputDir, \
-    JobQuestionnaire, JobAnswerSet, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser
+    JobQuestionnaire, JobAnswerSet, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
+    WorkflowMethodsDocument
 from exceptions import WrappedDataServiceException
 from util import DDSResource
 
@@ -1347,3 +1348,44 @@ class AdminShareGroupTestCase(APITestCase):
         group = response.data
         self.assertEqual('Data validation team 1', group['name'])
         self.assertEqual(None, group.get('users'))  # Regular users cannot see users in groups
+
+
+class WorkflowMethodsDocumentTestCase(APITestCase):
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        workflow1 = Workflow.objects.create(name='RnaSeq')
+        cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
+        self.workflow_version = WorkflowVersion.objects.create(workflow=workflow1, version="1", url=cwl_url)
+        self.methods_document = WorkflowMethodsDocument.objects.create(workflow_version=self.workflow_version,
+                                                                       content="#One")
+
+    def test_cannot_write(self):
+        self.user_login.become_normal_user()
+        url = reverse('workflowmethodsdocument-list')
+        response = self.client.post(url, format='json', data={
+            'workflow_version': self.workflow_version.id,
+            'content': '#Two',
+        })
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.user_login.become_admin_user()
+        url = reverse('admin_workflowmethodsdocument-list')
+        response = self.client.post(url, format='json', data={
+            'workflow_version': self.workflow_version.id,
+            'content': '#Two',
+        })
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_read_only_access(self):
+        url = reverse('workflowmethodsdocument-list')
+        self.user_login.become_normal_user()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+        self.assertEqual('#One', response.data[0]['content'])
+
+        url = reverse('admin_workflowmethodsdocument-list')
+        self.user_login.become_admin_user()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+        self.assertEqual('#One', response.data[0]['content'])

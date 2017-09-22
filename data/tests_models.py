@@ -5,7 +5,7 @@ from models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, Job
 from models import LandoConnection
 from models import JobQuestionnaire, JobAnswerSet, VMFlavor, VMProject
 from models import JobToken
-from models import DDSUser, ShareGroup
+from models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -522,3 +522,31 @@ class ShareGroupTests(TestCase):
         self.assertEqual(2, len(group_users))
         self.assertIn(self.ddsuser1, group_users)
         self.assertIn(self.ddsuser2, group_users)
+
+
+class WorkflowMethodsDocumentTests(TestCase):
+    def setUp(self):
+        workflow = Workflow.objects.create(name='RnaSeq')
+        self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
+                                                               object_name='#main',
+                                                               version='1',
+                                                               url=CWL_URL)
+
+    def test_crud(self):
+        WorkflowMethodsDocument.objects.create(workflow_version=self.workflow_version,
+                                               content='#Good Stuff\nSome text.')
+        self.assertEqual(1, len(WorkflowMethodsDocument.objects.all()))
+        methods_document = WorkflowMethodsDocument.objects.first()
+        self.assertEqual(methods_document.workflow_version.id, self.workflow_version.id)
+        self.assertEqual(methods_document.content, '#Good Stuff\nSome text.')
+        methods_document.content = '#NEW CONTENT'
+        methods_document.save()
+        methods_document = WorkflowMethodsDocument.objects.first()
+        self.assertEqual(methods_document.content, '#NEW CONTENT')
+        methods_document.delete()
+        self.assertEqual(0, len(WorkflowMethodsDocument.objects.all()))
+
+    def test_workflow_version_link(self):
+        methods_document = WorkflowMethodsDocument.objects.create(workflow_version=self.workflow_version,
+                                                                  content='#Good Stuff\nSome text.')
+        self.assertEqual('#Good Stuff\nSome text.', self.workflow_version.methods_document.content)
