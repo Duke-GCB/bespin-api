@@ -344,6 +344,17 @@ class JobTests(TestCase):
                                       )
         self.assertIn("unique constraint", str(raised_error.exception).lower())
 
+    def test_can_set_organize_output_project_step(self):
+        job = Job.objects.create(workflow_version=self.workflow_version,
+                                 user=self.user,
+                                 job_order=self.sample_json,
+                                 share_group=self.share_group,
+                                 vm_settings=self.vm_settings,
+                                 vm_flavor=self.vm_flavor)
+        job.step = Job.JOB_STEP_ORGANIZE_OUTPUT_PROJECT
+        job.save()
+        self.assertEqual(Job.objects.first().step, Job.JOB_STEP_ORGANIZE_OUTPUT_PROJECT)
+
     def test_job_activity_creation(self):
         # Create job which should start in new state
         job = Job.objects.create(workflow_version=self.workflow_version, user=self.user, job_order=self.sample_json,
