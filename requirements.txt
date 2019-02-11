@@ -12,7 +12,7 @@ gcb-web-auth==1.0.1
 habanero==0.5.0
 inflection==0.3.1
 Jinja2==2.9.6
-lando-messaging==0.7.5
+lando-messaging==0.7.6
 mock==2.0.0
 pbr==1.10.0
 pika==0.10.0
