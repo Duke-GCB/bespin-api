@@ -8,7 +8,7 @@ from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
 from data.models import JobActivity
-from data.models import VMStrategy, WorkflowConfiguration
+from data.models import JobStrategy, WorkflowConfiguration
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -972,7 +972,7 @@ class WorkflowConfigurationTestCase(TestCase):
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
-        self.vm_strategy = VMStrategy.objects.create(
+        self.vm_strategy = JobStrategy.objects.create(
             name='default',
             vm_settings=self.vm_settings,
             vm_flavor=self.vm_flavor

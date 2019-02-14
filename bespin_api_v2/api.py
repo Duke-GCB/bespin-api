@@ -4,11 +4,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import detail_route
 from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
-from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVersionSerializer, VMStrategySerializer, \
+from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVersionSerializer, JobStrategySerializer, \
     WorkflowConfigurationSerializer, JobTemplateMinimalSerializer, JobTemplateSerializer, WorkflowVersionSerializer, \
     ShareGroupSerializer, JobTemplateValidatingSerializer
 from data.serializers import JobSerializer
-from data.models import Workflow, WorkflowVersion, VMStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup
+from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup
 from data.exceptions import BespinAPIException
 
 
@@ -40,10 +40,10 @@ class AdminWorkflowConfigurationViewSet(CreateListRetrieveModelViewSet):
     queryset = WorkflowConfiguration.objects.all()
 
 
-class VMStrategyViewSet(viewsets.ReadOnlyModelViewSet):
+class JobStrategyViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
-    serializer_class = VMStrategySerializer
-    queryset = VMStrategy.objects.all()
+    serializer_class = JobStrategySerializer
+    queryset = JobStrategy.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('name',)
 

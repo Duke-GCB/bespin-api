@@ -501,7 +501,7 @@ class EmailMessage(models.Model):
         self.save()
 
 
-class VMStrategy(models.Model):
+class JobStrategy(models.Model):
     """
     Specifies a VM strategy used to create a job.
     """
@@ -519,10 +519,10 @@ class VMStrategy(models.Model):
                                      help_text='JSON-encoded dictionary of volume mounts, e.g. {"/dev/vdb1": "/work"}')
 
     class Meta:
-        verbose_name_plural = "VM Strategies"
+        verbose_name_plural = "Job Strategies"
 
     def __str__(self):
-        return "VMStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(
+        return "JobStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(
             self.pk, self.name, self.vm_flavor.name, self.volume_size_base, self.volume_size_factor)
 
 
@@ -533,7 +533,7 @@ class WorkflowConfiguration(models.Model):
     tag = models.SlugField(help_text="Unique tag to represent this workflow")
     workflow = models.ForeignKey(Workflow)
     system_job_order = JSONField(help_text="Dictionary containing the portion of the job order specified by system.")
-    default_vm_strategy = models.ForeignKey(VMStrategy,
+    default_vm_strategy = models.ForeignKey(JobStrategy,
                                             help_text='VM setup to use for jobs created with this configuration')
     share_group = models.ForeignKey(ShareGroup,
                                     help_text='Users who will have job output shared with them')

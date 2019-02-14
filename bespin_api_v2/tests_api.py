@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
-from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, VMStrategy, ShareGroup, JobFlavor, \
+from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
     VMSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -177,7 +177,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
+        self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
 
     def test_list_fails_unauthenticated(self):
@@ -261,7 +261,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class VMStrategyViewSetTestCase(APITestCase):
+class JobStrategyViewSetTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
         self.vm_flavor = JobFlavor.objects.create(name='large')
@@ -276,7 +276,7 @@ class VMStrategyViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_normal_user(self):
-        self.vm_strategy = VMStrategy.objects.create(name='default', vm_flavor=self.vm_flavor,
+        self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=self.vm_flavor,
                                                      vm_settings=self.vm_settings)
         self.user_login.become_normal_user()
         url = reverse('v2-vmstrategies-list')
@@ -289,8 +289,8 @@ class VMStrategyViewSetTestCase(APITestCase):
         self.assertEqual(response.data[0]['vm_settings'], self.vm_settings.id)
 
     def test_list_filtering(self):
-        VMStrategy.objects.create(name='default', vm_flavor=self.vm_flavor, vm_settings=self.vm_settings)
-        VMStrategy.objects.create(name='better', vm_flavor=self.vm_flavor, vm_settings=self.vm_settings)
+        JobStrategy.objects.create(name='default', vm_flavor=self.vm_flavor, vm_settings=self.vm_settings)
+        JobStrategy.objects.create(name='better', vm_flavor=self.vm_flavor, vm_settings=self.vm_settings)
         self.user_login.become_normal_user()
         url = reverse('v2-vmstrategies-list')
         response = self.client.get(url, format='json')
@@ -304,7 +304,7 @@ class VMStrategyViewSetTestCase(APITestCase):
         self.assertEqual(set([item['name'] for item in response.data]), set(['better']))
 
     def test_retrieve_with_normal_user(self):
-        self.vm_strategy = VMStrategy.objects.create(name='default', vm_flavor=self.vm_flavor,
+        self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=self.vm_flavor,
                                                      vm_settings=self.vm_settings)
         self.user_login.become_normal_user()
         url = reverse('v2-vmstrategies-list') + str(self.vm_strategy.id) + '/'
@@ -358,7 +358,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
+        self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
         self.endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret',
                                                    api_root='https://someserver.com/api')
@@ -499,7 +499,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
+        self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
         self.endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret',
                                                    api_root='https://someserver.com/api')

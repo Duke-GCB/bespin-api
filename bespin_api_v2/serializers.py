@@ -1,7 +1,7 @@
 import json
 from rest_framework import serializers, fields
 from django.contrib.auth.models import User
-from data.models import Workflow, WorkflowVersion, VMStrategy, WorkflowConfiguration, JobFileStageGroup, VMStrategy, \
+from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -53,10 +53,10 @@ class JobFlavorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VMStrategySerializer(serializers.ModelSerializer):
+class JobStrategySerializer(serializers.ModelSerializer):
     vm_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
-        model = VMStrategy
+        model = JobStrategy
         resource_name = 'vm-strategies'
         fields = '__all__'
 
@@ -84,7 +84,7 @@ class JobTemplateValidatingSerializer(JobTemplateMinimalSerializer):
 class JobTemplateSerializer(JobTemplateValidatingSerializer):
     stage_group = serializers.PrimaryKeyRelatedField(queryset=JobFileStageGroup.objects.all())
     job_vm_strategy = serializers.PrimaryKeyRelatedField(
-        queryset=VMStrategy.objects.all(), required=False)
+        queryset=JobStrategy.objects.all(), required=False)
     job = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
 
 
