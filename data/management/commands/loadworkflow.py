@@ -15,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument('system-job-order-file', help='JSON Job order with system answers to associate with questionnaire '
                                                    '(e.g. reference genome files)', type=FileType('r'))
         parser.add_argument('vm-flavor', help='Name of VM flavor to use when running jobs(e.g. \'m1.large\')')
-        parser.add_argument('vm-settings', help='Name of VMSettings to use when running jobs')
+        parser.add_argument('vm-settings', help='Name of JobSettings to use when running jobs')
         parser.add_argument('share-group', help='Name of Share group to attach to the job questionnaire')
         parser.add_argument('volume-size-base', help='Base volume size (in GB) used for this workflow.')
         parser.add_argument('volume-size-factor', help='Integer factor multiplied by input data size when running this workflow.')

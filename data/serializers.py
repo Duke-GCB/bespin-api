@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
     JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
-    EmailTemplate, EmailMessage, VMSettings, CloudSettings, JobActivity
+    EmailTemplate, EmailMessage, JobSettings, CloudSettings, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
 
@@ -137,10 +137,10 @@ class AdminCloudSettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AdminVMSettingsSerializer(serializers.ModelSerializer):
+class AdminJobSettingsSerializer(serializers.ModelSerializer):
     cloud_settings = AdminCloudSettingsSerializer(read_only=True)
     class Meta:
-        model = VMSettings
+        model = JobSettings
         resource_name = 'vm-settings'
         fields = '__all__'
 
@@ -150,7 +150,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
-    vm_settings = AdminVMSettingsSerializer(read_only=True)
+    vm_settings = AdminJobSettingsSerializer(read_only=True)
     vm_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = Job

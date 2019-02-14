@@ -1,5 +1,5 @@
 from data.models import Workflow, WorkflowVersion, JobQuestionnaire, JobFlavor, VMProject, \
-    VMSettings, ShareGroup, WorkflowMethodsDocument, JobQuestionnaireType
+    JobSettings, ShareGroup, WorkflowMethodsDocument, JobQuestionnaireType
 from cwltool.context import LoadingContext
 from cwltool.workflow import default_make_tool
 from cwltool.resolver import tool_resolver
@@ -165,9 +165,9 @@ class JobQuestionnaireImporter(BaseCreator):
         self.cwl_document = cwl_document
 
     def _create_models(self):
-        # Fail if VMSettings not found
-        self.vm_settings = VMSettings.objects.get(name=self.vm_settings_name)
-        self.log_creation(False, 'VMSettings', self.vm_settings_name, self.vm_settings.id)
+        # Fail if JobSettings not found
+        self.vm_settings = JobSettings.objects.get(name=self.vm_settings_name)
+        self.log_creation(False, 'JobSettings', self.vm_settings_name, self.vm_settings.id)
         # vm flavor
         self.vm_flavor, created = JobFlavor.objects.get_or_create(name=self.vm_flavor_name)
         self.log_creation(created, 'JobFlavor', self.vm_flavor_name, self.vm_flavor.id)
@@ -289,9 +289,9 @@ class WorkflowQuestionnaireImporter(object):
         vm_settings_name = self.data['vm_settings_name']
         share_group_name = self.data['share_group_name']
         try:
-            VMSettings.objects.get(name=vm_settings_name)
-        except VMSettings.DoesNotExist as e:
-            raise ImporterException('VMSettings with name \'{}\' not found'.format(vm_settings_name), e)
+            JobSettings.objects.get(name=vm_settings_name)
+        except JobSettings.DoesNotExist as e:
+            raise ImporterException('JobSettings with name \'{}\' not found'.format(vm_settings_name), e)
         try:
             ShareGroup.objects.get(name=share_group_name)
         except ShareGroup.DoesNotExist as e:

@@ -11,7 +11,7 @@ import datetime
 from data.models import Workflow, WorkflowVersion, Job, JobFileStageGroup, JobError, \
     DDSUserCredential, DDSEndpoint, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, \
     JobQuestionnaire, JobAnswerSet, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
-    WorkflowMethodsDocument, EmailMessage, EmailTemplate, CloudSettings, VMSettings, \
+    WorkflowMethodsDocument, EmailMessage, EmailTemplate, CloudSettings, JobSettings, \
     JobQuestionnaireType
 from rest_framework.authtoken.models import Token
 from data.exceptions import WrappedDataServiceException
@@ -382,7 +382,7 @@ def add_vm_settings(obj, project_name='project1',
                     settings_name='settings1'):
     vm_project = VMProject.objects.create(name=project_name)
     obj.cloud_settings = CloudSettings.objects.create(name=cloud_name, vm_project=vm_project)
-    obj.vm_settings = VMSettings.objects.create(name=settings_name, cloud_settings=obj.cloud_settings)
+    obj.vm_settings = JobSettings.objects.create(name=settings_name, cloud_settings=obj.cloud_settings)
 
 
 class JobsTestCase(APITestCase):

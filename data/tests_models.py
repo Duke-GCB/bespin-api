@@ -3,7 +3,7 @@ from data.models import DDSEndpoint, DDSUserCredential
 from data.models import Workflow, WorkflowVersion
 from data.models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, JobError
 from data.models import LandoConnection
-from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, VMSettings, CloudSettings
+from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, CloudSettings
 from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
@@ -145,7 +145,7 @@ class JobTests(TestCase):
         self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
     def test_create(self):
         Job.objects.create(workflow_version=self.workflow_version, user=self.user,
@@ -239,7 +239,7 @@ class JobTests(TestCase):
         vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        obj.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        obj.vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
         obj.job = Job.objects.create(workflow_version=obj.workflow_version, user=obj.user,
                                      job_order=obj.sample_json,
@@ -584,7 +584,7 @@ class JobQuestionnaireTests(TestCase):
     def add_vmsettings_fields(obj):
         obj.vm_project = VMProject.objects.create(name='project')
         obj.cloud_settings = CloudSettings.objects.create(name='cloud', vm_project=obj.vm_project)
-        obj.vm_settings = VMSettings.objects.create(name='settings', cloud_settings=obj.cloud_settings)
+        obj.vm_settings = JobSettings.objects.create(name='settings', cloud_settings=obj.cloud_settings)
         obj.vm_flavor = JobFlavor.objects.create(name='flavor')
 
     @staticmethod
@@ -605,9 +605,9 @@ class JobQuestionnaireTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.cloud = CloudSettings.objects.create(name='cloud',
                                                   vm_project=self.project)
-        self.settings1 = VMSettings.objects.create(name='settings1',
+        self.settings1 = JobSettings.objects.create(name='settings1',
                                                    cloud_settings=self.cloud)
-        self.settings2 = VMSettings.objects.create(name='settings2',
+        self.settings2 = JobSettings.objects.create(name='settings2',
                                                    cloud_settings=self.cloud)
         self.questionnaire_type = JobQuestionnaireType.objects.create(tag='human')
 
@@ -896,7 +896,7 @@ class CloudSettingsTests(TestCase):
         self.assertNotIn('floating_ip_pool_name', error_dict)
 
 
-class VMSettingsTests(TestCase):
+class JobSettingsTests(TestCase):
 
     def setUp(self):
         self.create_args = {
@@ -904,15 +904,15 @@ class VMSettingsTests(TestCase):
         }
 
     def test_creates_with_required_fks(self):
-        VMSettings.objects.create(**self.create_args)
+        JobSettings.objects.create(**self.create_args)
 
     def test_requires_cloud_settings(self):
         del self.create_args['cloud_settings']
         with self.assertRaises(IntegrityError) as val:
-            VMSettings.objects.create(**self.create_args)
+            JobSettings.objects.create(**self.create_args)
 
     def test_validates_fields(self):
-        vm_settings = VMSettings.objects.create(**self.create_args)
+        vm_settings = JobSettings.objects.create(**self.create_args)
         with self.assertRaises(ValidationError) as val:
             vm_settings.clean_fields()
         error_dict = val.exception.error_dict
@@ -929,9 +929,9 @@ class VMSettingsTests(TestCase):
 
     def test_unique_names(self):
         self.create_args['name'] = 'settings1'
-        VMSettings.objects.create(**self.create_args)
+        JobSettings.objects.create(**self.create_args)
         with self.assertRaises(IntegrityError):
-            VMSettings.objects.create(**self.create_args)
+            JobSettings.objects.create(**self.create_args)
 
 
 class JobQuestionnaireTypeTests(TestCase):
@@ -971,7 +971,7 @@ class WorkflowConfigurationTestCase(TestCase):
         self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
         self.vm_strategy = JobStrategy.objects.create(
             name='default',
             vm_settings=self.vm_settings,

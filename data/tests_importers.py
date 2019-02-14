@@ -119,7 +119,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
         importer = WorkflowQuestionnaireImporter(self.data)
         with self.assertRaises(ImporterException) as cm:
             importer.run()
-        self.assertIn('VMSettings', cm.exception.message)
+        self.assertIn('JobSettings', cm.exception.message)
 
     def test_raises_share_group_name_not_found(self):
         add_vm_settings(self, settings_name=self.vm_settings_name)

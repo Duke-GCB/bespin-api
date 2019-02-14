@@ -139,9 +139,9 @@ class CloudSettings(models.Model):
         verbose_name_plural = "Cloud Settings Collections"
 
 
-class VMSettings(models.Model):
+class JobSettings(models.Model):
     """
-    A collection of settings that specify details for VMs launched
+    A collection of settings that specify details for Jobs launched
     """
     name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
     cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
@@ -153,10 +153,10 @@ class VMSettings(models.Model):
                                                 help_text='JSON-encoded command array to run before cwl_base_command')
 
     def __str__(self):
-        return "VMSettings - pk: {} name: '{}' image_name: '{}'".format(self.pk, self.name, self.image_name,)
+        return "JobSettings - pk: {} name: '{}' image_name: '{}'".format(self.pk, self.name, self.image_name,)
 
     class Meta:
-        verbose_name_plural = "VM Settings Collections"
+        verbose_name_plural = "Job Settings Collections"
 
 
 class Job(models.Model):
@@ -215,8 +215,8 @@ class Job(models.Model):
     step = models.CharField(max_length=1, choices=JOB_STEPS, blank=True,
                             help_text="Job step (progress within Running state)")
     last_updated = models.DateTimeField(auto_now=True)
-    vm_settings = models.ForeignKey(VMSettings,
-                                    help_text='Collection of settings to use when launching VM for this job')
+    vm_settings = models.ForeignKey(JobSettings,
+                                    help_text='Collection of settings to use when running this job')
     vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when launching VM for this job')
     vm_instance_name = models.CharField(max_length=255, blank=True,
@@ -344,7 +344,7 @@ class JobQuestionnaire(models.Model):
                                                   "a job answer set.")
     share_group = models.ForeignKey(ShareGroup,
                                     help_text='Users who will have job output shared with them')
-    vm_settings = models.ForeignKey(VMSettings,
+    vm_settings = models.ForeignKey(JobSettings,
                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
     vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
@@ -506,7 +506,7 @@ class JobStrategy(models.Model):
     Specifies a VM strategy used to create a job.
     """
     name = models.CharField(max_length=255, help_text="Short user facing name")
-    vm_settings = models.ForeignKey(VMSettings,
+    vm_settings = models.ForeignKey(JobSettings,
                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
     vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')

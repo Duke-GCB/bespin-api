@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
 from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
-    VMSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
+    JobSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
 
@@ -175,7 +175,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
         self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
@@ -267,7 +267,7 @@ class JobStrategyViewSetTestCase(APITestCase):
         self.vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
     def test_list_fails_unauthenticated(self):
         self.user_login.become_unauthorized()
@@ -356,7 +356,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
         self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
@@ -497,7 +497,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
         vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        vm_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
 
         self.vm_strategy = JobStrategy.objects.create(name='default', vm_flavor=vm_flavor, vm_settings=vm_settings)
         self.share_group = ShareGroup.objects.create()
