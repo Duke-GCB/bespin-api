@@ -99,7 +99,7 @@ class ShareGroup(models.Model):
         return "ShareGroup - pk: {} name: '{}' email: '{}'".format(self.pk, self.name, self.email,)
 
 
-class VMFlavor(models.Model):
+class JobFlavor(models.Model):
     """
     Specifies parameters for requesting cloud resources
     """
@@ -109,7 +109,7 @@ class VMFlavor(models.Model):
                                help_text="How many CPUs are assigned to this flavor")
 
     def __str__(self):
-        return "VMFlavor - pk: {} name: '{}' cpus: {}".format(self.pk, self.name, self.cpus,)
+        return "JobFlavor - pk: {} name: '{}' cpus: {}".format(self.pk, self.name, self.cpus,)
 
 
 class VMProject(models.Model):
@@ -217,7 +217,7 @@ class Job(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
     vm_settings = models.ForeignKey(VMSettings,
                                     help_text='Collection of settings to use when launching VM for this job')
-    vm_flavor = models.ForeignKey(VMFlavor,
+    vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when launching VM for this job')
     vm_instance_name = models.CharField(max_length=255, blank=True,
                                         help_text="Name of the vm this job is/was running on.")
@@ -346,7 +346,7 @@ class JobQuestionnaire(models.Model):
                                     help_text='Users who will have job output shared with them')
     vm_settings = models.ForeignKey(VMSettings,
                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(VMFlavor,
+    vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
@@ -508,7 +508,7 @@ class VMStrategy(models.Model):
     name = models.CharField(max_length=255, help_text="Short user facing name")
     vm_settings = models.ForeignKey(VMSettings,
                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(VMFlavor,
+    vm_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')

@@ -1,4 +1,4 @@
-from data.models import Workflow, WorkflowVersion, JobQuestionnaire, VMFlavor, VMProject, \
+from data.models import Workflow, WorkflowVersion, JobQuestionnaire, JobFlavor, VMProject, \
     VMSettings, ShareGroup, WorkflowMethodsDocument, JobQuestionnaireType
 from cwltool.context import LoadingContext
 from cwltool.workflow import default_make_tool
@@ -169,8 +169,8 @@ class JobQuestionnaireImporter(BaseCreator):
         self.vm_settings = VMSettings.objects.get(name=self.vm_settings_name)
         self.log_creation(False, 'VMSettings', self.vm_settings_name, self.vm_settings.id)
         # vm flavor
-        self.vm_flavor, created = VMFlavor.objects.get_or_create(name=self.vm_flavor_name)
-        self.log_creation(created, 'VMFlavor', self.vm_flavor_name, self.vm_flavor.id)
+        self.vm_flavor, created = JobFlavor.objects.get_or_create(name=self.vm_flavor_name)
+        self.log_creation(created, 'JobFlavor', self.vm_flavor_name, self.vm_flavor.id)
         # share group
         self.share_group, created = ShareGroup.objects.get_or_create(name=self.share_group_name)
         self.log_creation(created, 'ShareGroup', self.share_group_name, self.share_group.id)

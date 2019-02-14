@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
-    JobQuestionnaire, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
+    JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
     EmailTemplate, EmailMessage, VMSettings, CloudSettings, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
@@ -122,9 +122,9 @@ class VMProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class VMFlavorSerializer(serializers.ModelSerializer):
+class JobFlavorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VMFlavor
+        model = JobFlavor
         resource_name = 'vm-flavors'
         fields = '__all__'
 
@@ -151,7 +151,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
     vm_settings = AdminVMSettingsSerializer(read_only=True)
-    vm_flavor = VMFlavorSerializer(read_only=True)
+    vm_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = Job
         resource_name = 'jobs'
