@@ -4,7 +4,7 @@ from django.test import override_settings
 from rest_framework.exceptions import ValidationError
 from unittest.mock import MagicMock, patch, Mock
 from data.models import DDSEndpoint, DDSUserCredential, Workflow, WorkflowVersion, JobFileStageGroup, ShareGroup, \
-    DDSJobInputFile, URLJobInputFile, VMFlavor, VMProject, VMSettings, CloudSettings, Job
+    DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, VMSettings, CloudSettings, Job
 from data.jobfactory import JobFactory, JobFactoryException, JobVMStrategy, calculate_stage_group_size, \
     calculate_volume_size
 import json
@@ -29,7 +29,7 @@ class JobFactoryTests(TestCase):
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(name='cloud1', vm_project=vm_project)
         self.vm_settings = VMSettings.objects.create(name='settings1', cloud_settings=cloud_settings)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         self.volume_mounts = json.dumps({'/dev/vdb1': '/work'})
         self.job_vm_strategy = JobVMStrategy(self.vm_settings, self.vm_flavor,
                                              volume_size_base=10, volume_size_factor=0,

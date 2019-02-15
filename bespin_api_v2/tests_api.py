@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
-from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, VMStrategy, ShareGroup, VMFlavor, \
+from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, VMStrategy, ShareGroup, JobFlavor, \
     VMSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -172,7 +172,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
             url='',
             fields=[{"name": "threads", "class": "int"}]
         )
-        vm_flavor = VMFlavor.objects.create(name='large')
+        vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
@@ -264,7 +264,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
 class VMStrategyViewSetTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
-        self.vm_flavor = VMFlavor.objects.create(name='large')
+        self.vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
@@ -353,7 +353,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             url='',
             fields=[{"name":"threads", "type": "int"}],
         )
-        vm_flavor = VMFlavor.objects.create(name='large')
+        vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
@@ -494,7 +494,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
         )
-        vm_flavor = VMFlavor.objects.create(name='large')
+        vm_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)

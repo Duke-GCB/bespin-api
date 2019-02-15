@@ -3,7 +3,7 @@ from data.models import DDSEndpoint, DDSUserCredential
 from data.models import Workflow, WorkflowVersion
 from data.models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, JobError
 from data.models import LandoConnection
-from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, VMFlavor, VMProject, VMSettings, CloudSettings
+from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, VMSettings, CloudSettings
 from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
@@ -142,7 +142,7 @@ class JobTests(TestCase):
         self.user = User.objects.create_user('test_user')
         self.sample_json = "{'type': 1}"
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
@@ -236,7 +236,7 @@ class JobTests(TestCase):
                                                               fields=[])
         obj.sample_json = "{'type': 1}"
 
-        vm_flavor = VMFlavor.objects.create(name='flavor1')
+        vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         obj.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
@@ -585,7 +585,7 @@ class JobQuestionnaireTests(TestCase):
         obj.vm_project = VMProject.objects.create(name='project')
         obj.cloud_settings = CloudSettings.objects.create(name='cloud', vm_project=obj.vm_project)
         obj.vm_settings = VMSettings.objects.create(name='settings', cloud_settings=obj.cloud_settings)
-        obj.vm_flavor = VMFlavor.objects.create(name='flavor')
+        obj.vm_flavor = JobFlavor.objects.create(name='flavor')
 
     @staticmethod
     def add_workflowversion_fields(obj):
@@ -596,8 +596,8 @@ class JobQuestionnaireTests(TestCase):
                                                               version='1',
                                                               url=CWL_URL,
                                                               fields=[])
-        obj.flavor1 = VMFlavor.objects.create(name='flavor1')
-        obj.flavor2 = VMFlavor.objects.create(name='flavor2')
+        obj.flavor1 = JobFlavor.objects.create(name='flavor1')
+        obj.flavor2 = JobFlavor.objects.create(name='flavor2')
         obj.project = VMProject.objects.create(name='bespin-project')
 
     def setUp(self):
@@ -947,17 +947,17 @@ class JobQuestionnaireTypeTests(TestCase):
             JobQuestionnaireType.objects.create(tag='tag1')
 
 
-class VMFlavorTests(TestCase):
+class JobFlavorTests(TestCase):
     def test_default_cpus(self):
-        VMFlavor.objects.create(name='m1.small')
-        flavors = VMFlavor.objects.all()
+        JobFlavor.objects.create(name='m1.small')
+        flavors = JobFlavor.objects.all()
         self.assertEqual(len(flavors), 1)
         self.assertEqual(flavors[0].name, 'm1.small')
         self.assertEqual(flavors[0].cpus, 1)
 
     def test_cpus(self):
-        VMFlavor.objects.create(name='m1.xxlarge', cpus=32)
-        flavors = VMFlavor.objects.all()
+        JobFlavor.objects.create(name='m1.xxlarge', cpus=32)
+        flavors = JobFlavor.objects.all()
         self.assertEqual(len(flavors), 1)
         self.assertEqual(flavors[0].name, 'm1.xxlarge')
         self.assertEqual(flavors[0].cpus, 32)
@@ -968,7 +968,7 @@ class WorkflowConfigurationTestCase(TestCase):
         self.workflow = Workflow.objects.create(name='exomeseq', tag='exomeseq')
         self.workflow2 = Workflow.objects.create(name='exomeseq2', tag='exomseq2')
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
         self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)

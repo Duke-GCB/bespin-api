@@ -2,7 +2,7 @@ import json
 from rest_framework import serializers, fields
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, VMStrategy, WorkflowConfiguration, JobFileStageGroup, VMStrategy, \
-    ShareGroup, VMFlavor, Job
+    ShareGroup, JobFlavor, Job
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
 
@@ -48,7 +48,7 @@ class WorkflowConfigurationSerializer(serializers.ModelSerializer):
 
 class VMFlavorSerializer(serializers.ModelSerializer):
     class Meta:
-        model = VMFlavor
+        model = JobFlavor
         resource_name = 'vm-flavors'
         fields = '__all__'
 

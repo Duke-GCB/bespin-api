@@ -10,7 +10,7 @@ import datetime
 
 from data.models import Workflow, WorkflowVersion, Job, JobFileStageGroup, JobError, \
     DDSUserCredential, DDSEndpoint, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, \
-    JobQuestionnaire, JobAnswerSet, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
+    JobQuestionnaire, JobAnswerSet, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
     WorkflowMethodsDocument, EmailMessage, EmailTemplate, CloudSettings, VMSettings, \
     JobQuestionnaireType
 from rest_framework.authtoken.models import Token
@@ -291,7 +291,7 @@ class WorkflowVersionTestCase(APITestCase):
         self.user_login = UserLogin(self.client)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
 
     def testNoPermissionsWithoutAuth(self):
         self.user_login.become_unauthorized()
@@ -395,7 +395,7 @@ class JobsTestCase(APITestCase):
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         add_vm_settings(self)
 
     def testUserOnlySeeTheirData(self):
@@ -984,7 +984,7 @@ class JobStageGroupTestCase(APITestCase):
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
 
     def testOnlySeeOwnStageGroups(self):
         other_user = self.user_login.become_normal_user()
@@ -1042,7 +1042,7 @@ class JobErrorTestCase(APITestCase):
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
 
     def testNormalUserReadOnly(self):
         other_user = self.user_login.become_normal_user()
@@ -1121,7 +1121,7 @@ class DDSJobInputFileTestCase(APITestCase):
         self.stage_group = JobFileStageGroup.objects.create(user=self.my_user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
@@ -1194,7 +1194,7 @@ class URLJobInputFileTestCase(APITestCase):
         self.stage_group = JobFileStageGroup.objects.create(user=self.my_user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
@@ -1247,7 +1247,7 @@ class JobDDSOutputProjectTestCase(APITestCase):
         self.my_user = self.user_login.become_normal_user()
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
@@ -1375,7 +1375,7 @@ class JobQuestionnaireTestCase(APITestCase):
         self.system_job_order_json1 = json.dumps({'system_input': 1})
         self.system_job_order_json2 = json.dumps({'system_input': 2})
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
                                                                version="1",
                                                                url=cwl_url,
@@ -1480,7 +1480,7 @@ class JobAnswerSetTests(APITestCase):
         workflow = Workflow.objects.create(name='RnaSeq', tag='rna-seq')
         cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
         add_vm_settings(self)
-        self.vm_flavor = VMFlavor.objects.create(name='flavor')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor')
         self.system_job_order_json1 = json.dumps({'system_input': 1})
         self.system_job_order_json2 = json.dumps({'system_input': 2})
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
@@ -1553,7 +1553,7 @@ class JobAnswerSetTests(APITestCase):
 
     def setup_minimal_questionnaire(self):
         add_vm_settings(self, project_name='project2', cloud_name='cloud2', settings_name='settings2')
-        vm_flavor = VMFlavor.objects.create(name='flavor2')
+        vm_flavor = JobFlavor.objects.create(name='flavor2')
         questionnaire = JobQuestionnaire.objects.create(description='Workflow1',
                                                         workflow_version=self.workflow_version,
                                                         system_job_order_json=self.system_job_order_json1,
@@ -2094,7 +2094,7 @@ class JobActivitiesTestCase(APITestCase):
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
+        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         add_vm_settings(self)
 
     @staticmethod
