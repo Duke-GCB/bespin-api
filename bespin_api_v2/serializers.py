@@ -47,6 +47,9 @@ class WorkflowConfigurationSerializer(serializers.ModelSerializer):
 
 
 class VMFlavorSerializer(serializers.ModelSerializer):
+    """
+    Serializes new JobFlavor model into old VMFlavor format to maintain pre-existing vm-flavors api
+    """
     class Meta:
         model = JobFlavor
         resource_name = 'vm-flavors'
