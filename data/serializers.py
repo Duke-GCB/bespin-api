@@ -124,7 +124,7 @@ class VMProjectSerializer(serializers.ModelSerializer):
 
 class VMFlavorSerializer(serializers.ModelSerializer):
     """
-    Serializes new JobFlavor model into old VMFlavor format to maintain pre-existing vm-flavors api
+    Serializes new JobFlavor model into old VMFlavor format to maintain original vm-flavors api
     """
     class Meta:
         model = JobFlavor
@@ -382,7 +382,8 @@ class AdminImportWorkflowQuestionnaireSerializer(serializers.Serializer):
     methods_template_url = serializers.URLField()
     system_json = serializers.DictField()
     vm_settings_name = serializers.CharField(min_length=1) # must relate to an existing VM Settings
-    vm_flavor_name = serializers.CharField(min_length=1) # must relate to an existing VM Flavor
+    vm_flavor_name = serializers.CharField(min_length=1)  # must relate to an existing Job Flavor
+                                                          # called vm_flavor_name to maintain original api
     share_group_name = serializers.CharField(min_length=1) # must relate to an existing Share Group
     volume_size_base = serializers.IntegerField()
     volume_size_factor = serializers.IntegerField()
