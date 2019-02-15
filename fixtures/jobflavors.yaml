@@ -1,0 +1,15 @@
+- model: data.jobflavor
+  pk: 1
+  fields: {name: m1.xlarge, cpus: 8, memory: '16G'}
+- model: data.jobflavor
+  pk: 2
+  fields: {name: m1.tiny, cpus: 1, memory: '512M'}
+- model: data.jobflavor
+  pk: 3
+  fields: {name: m1.small, cpus: 1, memory: '2G'}
+- model: data.jobflavor
+  pk: 4
+  fields: {name: m1.large, cpus: 4, memory: '8G'}
+- model: data.jobflavor
+  pk: 5
+  fields: {name: m1.medium, cpus: 2, memory: '4G'}

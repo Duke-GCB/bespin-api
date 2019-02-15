@@ -109,7 +109,7 @@ class JobFlavor(models.Model):
                             help_text="The name of the flavor to use when launching instances (specifies CPU/RAM)")
     cpus = models.IntegerField(default=1,
                                help_text="How many CPUs are assigned to this flavor")
-    memory = models.IntegerField(default=1,
+    memory = models.CharField(default='1Gi', max_length=12,
                                  help_text="How much memory in GiB is assigned to this flavor")
 
     def __str__(self):
@@ -222,7 +222,7 @@ class Job(models.Model):
     vm_settings = models.ForeignKey(VMSettings,
                                     help_text='Collection of settings to use when launching VM for this job')
     job_flavor = models.ForeignKey(JobFlavor,
-                                   help_text='VM Flavor to use when launching VM for this job')
+                                   help_text='Cpu/Memory to use when running the workflow associated with this job')
     vm_instance_name = models.CharField(max_length=255, blank=True,
                                         help_text="Name of the vm this job is/was running on.")
     vm_volume_name = models.CharField(max_length=255, blank=True,
@@ -351,7 +351,7 @@ class JobQuestionnaire(models.Model):
     vm_settings = models.ForeignKey(VMSettings,
                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
     job_flavor = models.ForeignKey(JobFlavor,
-                                  help_text='VM Flavor to use when creating VM instances for this questionnaire')
+                                  help_text='Cpu/Memory to use when running the workflow for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
     volume_size_factor = models.IntegerField(default=0,
