@@ -28,7 +28,7 @@ class JobFactoryTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='result data checkers')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(name='cloud1', vm_project=vm_project)
-        self.vm_settings = JobSettings.objects.create(name='settings1', cloud_settings=cloud_settings)
+        self.vm_settings = JobSettings.objects.create(name='settings1')
         self.vm_flavor = JobFlavor.objects.create(name='flavor1')
         self.volume_mounts = json.dumps({'/dev/vdb1': '/work'})
         self.job_vm_strategy = JobVMStrategy(self.vm_settings, self.vm_flavor,

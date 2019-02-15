@@ -143,7 +143,24 @@ class JobSettings(models.Model):
     """
     A collection of settings that specify details for Jobs launched
     """
+    VM_TYPE = 'vm'
+    K8S_TYPE = 'k8s'
+    TYPES = [
+        (VM_TYPE, 'VM Job Settings'),
+        (K8S_TYPE, 'K8s Job Settings'),
+    ]
+    type = models.TextField(choices=TYPES, default=VM_TYPE)
     name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
+
+    def __str__(self):
+        return "JobSettings - pk: {} name: '{}' type: '{}'".format(self.pk, self.name, self.type,)
+
+    class Meta:
+        verbose_name_plural = "Job Settings Collections"
+
+
+class VMCommand(models.Model):
+    job_settings = models.ForeignKey(JobSettings, help_text='job settings', related_name='vm_settings')
     cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
     image_name = models.CharField(max_length=255, help_text='Name of the VM Image to launch')
     cwl_base_command = models.TextField(help_text='JSON-encoded command array to run the  image\'s installed CWL engine')
@@ -151,12 +168,6 @@ class JobSettings(models.Model):
                                                 help_text='JSON-encoded command array to run after workflow completes')
     cwl_pre_process_command = models.TextField(blank=True,
                                                 help_text='JSON-encoded command array to run before cwl_base_command')
-
-    def __str__(self):
-        return "JobSettings - pk: {} name: '{}' image_name: '{}'".format(self.pk, self.name, self.image_name,)
-
-    class Meta:
-        verbose_name_plural = "Job Settings Collections"
 
 
 class Job(models.Model):
