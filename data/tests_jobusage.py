@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, JobFlavor, VMProject, CloudSettings, \
-    VMSettings
+    JobSettings
 import datetime
 from unittest.mock import Mock, patch
 from data.jobusage import JobUsage
@@ -22,12 +22,12 @@ class JobUsageTests(TestCase):
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
         self.job = Job.objects.create(workflow_version=self.workflow_version,
                                       user=self.user,
                                       job_order=self.sample_json,
                                       share_group=self.share_group,
-                                      vm_settings=self.vm_settings,
+                                      job_settings=self.job_settings,
                                       job_flavor=self.job_flavor)
 
     @staticmethod

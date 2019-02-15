@@ -1,7 +1,7 @@
 from django.test import TestCase
 from data.lando import LandoJob
 from data.models import LandoConnection, Workflow, WorkflowVersion, Job, JobFileStageGroup, \
-    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, VMSettings, CloudSettings
+    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, JobSettings, CloudSettings
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 from unittest.mock import patch, call
@@ -25,14 +25,14 @@ class LandoJobTests(TestCase):
         job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
         self.job = Job.objects.create(workflow_version=workflow_version,
                                       job_order={},
                                       user=self.user,
                                       stage_group=self.stage_group,
                                       share_group=self.share_group,
                                       volume_size=100,
-                                      vm_settings=self.vm_settings,
+                                      job_settings=self.job_settings,
                                       job_flavor=job_flavor)
         DDSJobInputFile.objects.create(stage_group=self.stage_group,
                                        project_id='1234',

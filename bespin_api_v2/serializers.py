@@ -58,6 +58,7 @@ class VMFlavorSerializer(serializers.ModelSerializer):
 
 class VMStrategySerializer(serializers.ModelSerializer):
     vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
+    vm_settings = serializers.IntegerField(source='job_settings_id')
     class Meta:
         model = VMStrategy
         resource_name = 'vm-strategies'

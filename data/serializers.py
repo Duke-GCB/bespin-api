@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
     JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
-    EmailTemplate, EmailMessage, VMSettings, CloudSettings, JobActivity
+    EmailTemplate, EmailMessage, JobSettings, CloudSettings, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
 
@@ -72,6 +72,7 @@ class JobSerializer(serializers.ModelSerializer):
     job_errors = JobErrorSerializer(required=False, read_only=True, many=True)
     run_token = serializers.CharField(required=False, read_only=True, source='run_token.token')
     usage = serializers.SerializerMethodField()
+    vm_settings = serializers.IntegerField(source='job_settings_id')
 
     def get_usage(self, job):
         """
@@ -140,10 +141,10 @@ class AdminCloudSettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AdminVMSettingsSerializer(serializers.ModelSerializer):
+class AdminJobSettingsSerializer(serializers.ModelSerializer):
     cloud_settings = AdminCloudSettingsSerializer(read_only=True)
     class Meta:
-        model = VMSettings
+        model = JobSettings
         resource_name = 'vm-settings'
         fields = '__all__'
 
@@ -153,7 +154,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
-    vm_settings = AdminVMSettingsSerializer(read_only=True)
+    vm_settings = AdminJobSettingsSerializer(read_only=True, source='job_settings')
     vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     class Meta:
         model = Job
@@ -292,6 +293,7 @@ class JobAnswerSetSerializer(serializers.ModelSerializer):
 class JobQuestionnaireSerializer(serializers.ModelSerializer):
     tag = serializers.SerializerMethodField()
     vm_flavor = serializers.IntegerField(source='job_flavor_id')
+    vm_settings = serializers.IntegerField(source='job_settings_id')
 
     def get_tag(self, obj):
         return obj.make_tag()
@@ -381,7 +383,8 @@ class AdminImportWorkflowQuestionnaireSerializer(serializers.Serializer):
     type_tag = serializers.CharField(min_length=1)
     methods_template_url = serializers.URLField()
     system_json = serializers.DictField()
-    vm_settings_name = serializers.CharField(min_length=1) # must relate to an existing VM Settings
+    vm_settings_name = serializers.CharField(min_length=1)  # must relate to an existing Job Settings
+                                                            # called vm_settings_name to maintain original api
     vm_flavor_name = serializers.CharField(min_length=1)  # must relate to an existing Job Flavor
                                                           # called vm_flavor_name to maintain original api
     share_group_name = serializers.CharField(min_length=1) # must relate to an existing Share Group

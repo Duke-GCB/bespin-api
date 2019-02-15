@@ -15,7 +15,7 @@ def create_job_factory_for_answer_set(job_answer_set):
     :return: JobFactory
     """
     user = job_answer_set.user
-    vm_settings = job_answer_set.questionnaire.vm_settings
+    job_settings = job_answer_set.questionnaire.job_settings
     workflow_version = job_answer_set.questionnaire.workflow_version
     stage_group = job_answer_set.stage_group
     job_name = job_answer_set.job_name
@@ -25,7 +25,7 @@ def create_job_factory_for_answer_set(job_answer_set):
     fund_code = job_answer_set.fund_code
     system_job_order = json.loads(job_answer_set.questionnaire.system_job_order_json)
     user_job_order = json.loads(job_answer_set.user_job_order_json)
-    job_vm_strategy = JobVMStrategy(vm_settings, job_flavor,
+    job_vm_strategy = JobVMStrategy(job_settings, job_flavor,
                                     job_answer_set.questionnaire.volume_size_base,
                                     job_answer_set.questionnaire.volume_size_factor,
                                     volume_mounts)
@@ -65,8 +65,8 @@ def calculate_stage_group_size(stage_group):
 
 
 class JobVMStrategy(object):
-    def __init__(self, vm_settings, job_flavor, volume_size_base, volume_size_factor, volume_mounts):
-        self.vm_settings = vm_settings
+    def __init__(self, job_settings, job_flavor, volume_size_base, volume_size_factor, volume_mounts):
+        self.job_settings = job_settings
         self.job_flavor = job_flavor
         self.volume_size_base = volume_size_base
         self.volume_size_factor = volume_size_factor
@@ -115,7 +115,7 @@ class JobFactory(object):
                                  user=self.user,
                                  stage_group=self.stage_group,
                                  name=self.job_name,
-                                 vm_settings=self.job_vm_strategy.vm_settings,
+                                 job_settings=self.job_vm_strategy.job_settings,
                                  job_order=json.dumps(job_order),
                                  volume_size=volume_size,
                                  vm_volume_mounts=self.job_vm_strategy.volume_mounts,

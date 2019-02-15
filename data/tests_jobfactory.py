@@ -4,7 +4,7 @@ from django.test import override_settings
 from rest_framework.exceptions import ValidationError
 from unittest.mock import MagicMock, patch, Mock
 from data.models import DDSEndpoint, DDSUserCredential, Workflow, WorkflowVersion, JobFileStageGroup, ShareGroup, \
-    DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, VMSettings, CloudSettings, Job
+    DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, JobSettings, CloudSettings, Job
 from data.jobfactory import JobFactory, JobFactoryException, JobVMStrategy, calculate_stage_group_size, \
     calculate_volume_size
 import json
@@ -28,10 +28,10 @@ class JobFactoryTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='result data checkers')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(name='cloud1', vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(name='settings1', cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create(name='settings1', cloud_settings=cloud_settings)
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         self.volume_mounts = json.dumps({'/dev/vdb1': '/work'})
-        self.job_vm_strategy = JobVMStrategy(self.vm_settings, self.job_flavor,
+        self.job_vm_strategy = JobVMStrategy(self.job_settings, self.job_flavor,
                                              volume_size_base=10, volume_size_factor=0,
                                              volume_mounts=self.volume_mounts)
 
@@ -63,7 +63,7 @@ class JobFactoryTests(TestCase):
         expected_job_order = {'input1':'user','input2':'system'}
         self.assertEqual(expected_job_order, json.loads(job.job_order))
         self.assertEqual(job.name, 'Test Job')
-        self.assertEqual(job.vm_settings, self.vm_settings)
+        self.assertEqual(job.job_settings, self.job_settings)
         self.assertEqual(job.job_flavor, self.job_flavor)
         self.assertEqual(self.worker_cred.id, job.output_project.dds_user_credentials.id)
         self.assertEqual(job.volume_size, 110)
