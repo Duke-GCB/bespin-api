@@ -54,11 +54,11 @@ class VMFlavorSerializer(serializers.ModelSerializer):
 
 
 class VMStrategySerializer(serializers.ModelSerializer):
-    vm_flavor = VMFlavorSerializer(read_only=True)
+    vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     class Meta:
         model = VMStrategy
         resource_name = 'vm-strategies'
-        fields = '__all__'
+        fields = ['id', 'name', 'vm_settings', 'vm_flavor', 'volume_size_base', 'volume_size_factor', 'volume_mounts']
 
 
 class JobTemplateMinimalSerializer(serializers.Serializer):

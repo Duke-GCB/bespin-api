@@ -291,7 +291,7 @@ class WorkflowVersionTestCase(APITestCase):
         self.user_login = UserLogin(self.client)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
 
     def testNoPermissionsWithoutAuth(self):
         self.user_login.become_unauthorized()
@@ -343,7 +343,7 @@ class WorkflowVersionTestCase(APITestCase):
                                                          system_job_order_json={},
                                                          share_group=self.share_group,
                                                          vm_settings=self.vm_settings,
-                                                         vm_flavor=self.vm_flavor,
+                                                         job_flavor=self.job_flavor,
                                                          type=questionnaire_type
                                                          )
         url = reverse('workflowversion-list') + '{}/'.format(wfv.id)
@@ -395,7 +395,7 @@ class JobsTestCase(APITestCase):
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
         add_vm_settings(self)
 
     def testUserOnlySeeTheirData(self):
@@ -407,7 +407,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -424,7 +424,7 @@ class JobsTestCase(APITestCase):
                                  user=other_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -443,7 +443,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -464,7 +464,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         # normal user can't see admin endpoint
         url = reverse('admin_job-list')
@@ -478,7 +478,7 @@ class JobsTestCase(APITestCase):
                                  user=other_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         # admin user can see both via admin endpoint
         admin_user = self.user_login.become_admin_user()
@@ -505,7 +505,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -528,7 +528,7 @@ class JobsTestCase(APITestCase):
                            user=admin_user,
                            share_group=self.share_group,
                            vm_settings=self.vm_settings,
-                           vm_flavor=self.vm_flavor,
+                           job_flavor=self.job_flavor,
                            )
         Job.objects.create(name='somejob2',
                            workflow_version=self.workflow_version,
@@ -537,7 +537,7 @@ class JobsTestCase(APITestCase):
                            user=admin_user,
                            share_group=self.share_group,
                            vm_settings=self.vm_settings,
-                           vm_flavor=self.vm_flavor,
+                           job_flavor=self.job_flavor,
                            )
         url = reverse('admin_job-list') + '?vm_instance_name=vm_job_1'
         response = self.client.get(url, format='json')
@@ -553,7 +553,7 @@ class JobsTestCase(APITestCase):
                                  user=admin_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('admin_job-list') + '{}/'.format(job.id)
 
@@ -577,7 +577,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         JobError.objects.create(job=job, content='Err1', job_step='R')
         JobError.objects.create(job=job, content='Err2', job_step='R')
@@ -601,7 +601,7 @@ class JobsTestCase(APITestCase):
                                  user=normal_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('admin_job-list') + '{}/'.format(job.id)
         response = self.client.put(url, format='json',
@@ -623,7 +623,7 @@ class JobsTestCase(APITestCase):
                                  user=admin_user,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('admin_job-list') + '{}/'.format(job.id)
         response = self.client.put(url, format='json',
@@ -651,7 +651,7 @@ class JobsTestCase(APITestCase):
                                  share_group=self.share_group,
                                  state=Job.JOB_STATE_AUTHORIZED,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('admin_job-list') + '{}/'.format(job.id)
         response = self.client.put(url, format='json',
@@ -678,7 +678,7 @@ class JobsTestCase(APITestCase):
                                  state=Job.JOB_STATE_RUNNING,
                                  step=Job.JOB_STEP_CREATE_VM,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('admin_job-list') + '{}/'.format(job.id)
         response = self.client.put(url, format='json',
@@ -699,7 +699,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         job.run_token = JobToken.objects.create(token='secret1')
         job.state = Job.JOB_STATE_AUTHORIZED
@@ -727,7 +727,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/cancel/'
         # Post to /cancel/ for job should work
@@ -745,7 +745,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/restart/'
 
@@ -789,7 +789,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/authorize/'
         response = self.client.post(url)
@@ -805,7 +805,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/authorize/'
         response = self.client.post(url, format='json', data={'token': 'secret1'})
@@ -822,7 +822,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/authorize/'
         response = self.client.post(url, format='json', data={'token': 'secret1'})
@@ -840,7 +840,7 @@ class JobsTestCase(APITestCase):
                                  state=Job.JOB_STATE_RUNNING,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/authorize/'
         response = self.client.post(url, format='json', data={'token': 'secret1'})
@@ -857,7 +857,7 @@ class JobsTestCase(APITestCase):
                                          run_token=job_token,
                                          share_group=self.share_group,
                                          vm_settings=self.vm_settings,
-                                         vm_flavor=self.vm_flavor,
+                                         job_flavor=self.job_flavor,
                                          )
         job = Job.objects.create(workflow_version=self.workflow_version,
                                  job_order={},
@@ -865,7 +865,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=JobFileStageGroup.objects.create(user=normal_user),
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/authorize/'
         response = self.client.post(url, format='json', data={'token': 'secret1'})
@@ -893,7 +893,7 @@ class JobsTestCase(APITestCase):
                                      stage_group=JobFileStageGroup.objects.create(user=normal_user),
                                      share_group=self.share_group,
                                      vm_settings=self.vm_settings,
-                                     vm_flavor=self.vm_flavor,
+                                     job_flavor=self.job_flavor,
                                      )
             job_id = job.id
             job.state = job_state
@@ -911,7 +911,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=JobFileStageGroup.objects.create(user=normal_user),
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         run_token = JobToken.objects.create(token='test-token')
         job.run_token = run_token;
@@ -932,7 +932,7 @@ class JobsTestCase(APITestCase):
                                  stage_group=stage_group,
                                  share_group=self.share_group,
                                  vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_flavor=self.job_flavor,
                                  )
         url = reverse('job-list') + str(job.id) + '/live-usage/'
         # Post to /cancel/ for job should work
@@ -952,7 +952,7 @@ class JobsTestCase(APITestCase):
                                   user=normal_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   state=Job.JOB_STATE_FINISHED
                                   )
         job2 = Job.objects.create(name='job2',
@@ -961,7 +961,7 @@ class JobsTestCase(APITestCase):
                                   user=normal_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   state=Job.JOB_STATE_RUNNING
                                   )
         response = self.client.get(url, format='json')
@@ -984,7 +984,7 @@ class JobStageGroupTestCase(APITestCase):
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
 
     def testOnlySeeOwnStageGroups(self):
         other_user = self.user_login.become_normal_user()
@@ -995,7 +995,7 @@ class JobStageGroupTestCase(APITestCase):
                                        stage_group=other_stage_group,
                                        share_group=self.share_group,
                                        vm_settings=self.vm_settings,
-                                       vm_flavor=self.vm_flavor,
+                                       job_flavor=self.job_flavor,
                                        )
         this_user = self.user_login.become_other_normal_user()
         this_stage_group = JobFileStageGroup.objects.create(user=this_user)
@@ -1005,7 +1005,7 @@ class JobStageGroupTestCase(APITestCase):
                                       stage_group=this_stage_group,
                                       share_group=self.share_group,
                                       vm_settings=self.vm_settings,
-                                      vm_flavor=self.vm_flavor,
+                                      job_flavor=self.job_flavor,
                                       )
         # User endpoint only shows current user's data
         url = reverse('jobfilestagegroup-list')
@@ -1042,7 +1042,7 @@ class JobErrorTestCase(APITestCase):
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
 
     def testNormalUserReadOnly(self):
         other_user = self.user_login.become_normal_user()
@@ -1051,7 +1051,7 @@ class JobErrorTestCase(APITestCase):
                                        user=other_user,
                                        share_group=self.share_group,
                                        vm_settings=self.vm_settings,
-                                       vm_flavor=self.vm_flavor,
+                                       job_flavor=self.job_flavor,
                                        )
         JobError.objects.create(job=other_job, content='Out of memory.', job_step=Job.JOB_STEP_RUNNING)
         # Normal user can't write
@@ -1065,7 +1065,7 @@ class JobErrorTestCase(APITestCase):
                                     user=my_user,
                                     share_group=self.share_group,
                                     vm_settings=self.vm_settings,
-                                    vm_flavor=self.vm_flavor,
+                                    job_flavor=self.job_flavor,
                                     )
         JobError.objects.create(job=my_job, content='Out of memory.', job_step=Job.JOB_STEP_RUNNING)
 
@@ -1095,7 +1095,7 @@ class JobErrorTestCase(APITestCase):
                                     user=my_user,
                                     share_group=self.share_group,
                                     vm_settings=self.vm_settings,
-                                    vm_flavor=self.vm_flavor,
+                                    job_flavor=self.job_flavor,
                                     )
         url = reverse('admin_joberror-list')
         response = self.client.post(url, format='json', data={
@@ -1121,14 +1121,14 @@ class DDSJobInputFileTestCase(APITestCase):
         self.stage_group = JobFileStageGroup.objects.create(user=self.my_user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
                                          stage_group=self.stage_group,
                                          share_group=self.share_group,
                                          vm_settings=self.vm_settings,
-                                         vm_flavor=self.vm_flavor,
+                                         job_flavor=self.job_flavor,
                                          )
         endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret', api_root='https://someserver.com/api')
         self.cred = DDSUserCredential.objects.create(endpoint=endpoint, user=self.my_user, token='secret2', dds_id='1')
@@ -1194,14 +1194,14 @@ class URLJobInputFileTestCase(APITestCase):
         self.stage_group = JobFileStageGroup.objects.create(user=self.my_user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
                                          stage_group=self.stage_group,
                                          share_group=self.share_group,
                                          vm_settings=self.vm_settings,
-                                         vm_flavor=self.vm_flavor,
+                                         job_flavor=self.job_flavor,
                                          )
 
     def testPostAndRead(self):
@@ -1247,13 +1247,13 @@ class JobDDSOutputProjectTestCase(APITestCase):
         self.my_user = self.user_login.become_normal_user()
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
         self.my_job = Job.objects.create(workflow_version=self.workflow_version,
                                          job_order='{}',
                                          user=self.my_user,
                                          share_group=self.share_group,
                                          vm_settings=self.vm_settings,
-                                         vm_flavor=self.vm_flavor,
+                                         job_flavor=self.job_flavor,
                                          )
         self.endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret', api_root='https://someserver.com/api')
         self.cred = DDSUserCredential.objects.create(endpoint=self.endpoint, user=self.my_user, token='secret2',
@@ -1375,7 +1375,7 @@ class JobQuestionnaireTestCase(APITestCase):
         self.system_job_order_json1 = json.dumps({'system_input': 1})
         self.system_job_order_json2 = json.dumps({'system_input': 2})
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
                                                                version="1",
                                                                url=cwl_url,
@@ -1393,7 +1393,7 @@ class JobQuestionnaireTestCase(APITestCase):
                                                               system_job_order_json=self.system_job_order_json1,
                                                               share_group=self.share_group,
                                                               vm_settings=self.vm_settings,
-                                                              vm_flavor=self.vm_flavor,
+                                                              job_flavor=self.job_flavor,
                                                               type=questionnaire_type1
                                                               )
         self.questionnaire2 = JobQuestionnaire.objects.create(name='Workflow2',
@@ -1402,7 +1402,7 @@ class JobQuestionnaireTestCase(APITestCase):
                                                               system_job_order_json=self.system_job_order_json2,
                                                               share_group=self.share_group,
                                                               vm_settings=self.vm_settings,
-                                                              vm_flavor=self.vm_flavor,
+                                                              job_flavor=self.job_flavor,
                                                               type=questionnaire_type2
                                                               )
         self.questionnaire2.save()
@@ -1480,7 +1480,7 @@ class JobAnswerSetTests(APITestCase):
         workflow = Workflow.objects.create(name='RnaSeq', tag='rna-seq')
         cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
         add_vm_settings(self)
-        self.vm_flavor = JobFlavor.objects.create(name='flavor')
+        self.job_flavor = JobFlavor.objects.create(name='flavor')
         self.system_job_order_json1 = json.dumps({'system_input': 1})
         self.system_job_order_json2 = json.dumps({'system_input': 2})
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
@@ -1494,7 +1494,7 @@ class JobAnswerSetTests(APITestCase):
                                                               system_job_order_json=self.system_job_order_json1,
                                                               share_group=self.share_group,
                                                               vm_settings=self.vm_settings,
-                                                              vm_flavor=self.vm_flavor,
+                                                              job_flavor=self.job_flavor,
                                                               type=self.questionnaire_type,
                                                               )
         self.questionnaire2 = JobQuestionnaire.objects.create(description='Workflow1',
@@ -1502,7 +1502,7 @@ class JobAnswerSetTests(APITestCase):
                                                               system_job_order_json=self.system_job_order_json2,
                                                               share_group=self.share_group,
                                                               vm_settings=self.vm_settings,
-                                                              vm_flavor=self.vm_flavor,
+                                                              job_flavor=self.job_flavor,
                                                               type=self.questionnaire_type,
                                                               )
         self.other_user = self.user_login.become_other_normal_user()
@@ -1553,13 +1553,13 @@ class JobAnswerSetTests(APITestCase):
 
     def setup_minimal_questionnaire(self):
         add_vm_settings(self, project_name='project2', cloud_name='cloud2', settings_name='settings2')
-        vm_flavor = JobFlavor.objects.create(name='flavor2')
+        job_flavor = JobFlavor.objects.create(name='flavor2')
         questionnaire = JobQuestionnaire.objects.create(description='Workflow1',
                                                         workflow_version=self.workflow_version,
                                                         system_job_order_json=self.system_job_order_json1,
                                                         share_group=self.share_group,
                                                         vm_settings=self.vm_settings,
-                                                        vm_flavor=vm_flavor,
+                                                        job_flavor=job_flavor,
                                                         type=self.questionnaire_type,
                                                         )
         return questionnaire
@@ -2094,7 +2094,7 @@ class JobActivitiesTestCase(APITestCase):
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
         add_vm_settings(self)
 
     @staticmethod
@@ -2110,7 +2110,7 @@ class JobActivitiesTestCase(APITestCase):
                                   user=normal_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   )
         job1.state = Job.JOB_STATE_RUNNING
         job1.step = Job.JOB_STEP_CREATE_VM
@@ -2130,7 +2130,7 @@ class JobActivitiesTestCase(APITestCase):
                                   user=other_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   )
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2146,7 +2146,7 @@ class JobActivitiesTestCase(APITestCase):
                                   user=normal_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   )
         job2 = Job.objects.create(name='my job2',
                                   workflow_version=self.workflow_version,
@@ -2154,7 +2154,7 @@ class JobActivitiesTestCase(APITestCase):
                                   user=normal_user,
                                   share_group=self.share_group,
                                   vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_flavor=self.job_flavor,
                                   state=Job.JOB_STATE_RUNNING
                                   )
         url = reverse('jobactivity-list')

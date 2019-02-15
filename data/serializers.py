@@ -151,7 +151,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
     vm_settings = AdminVMSettingsSerializer(read_only=True)
-    vm_flavor = VMFlavorSerializer(read_only=True)
+    vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     class Meta:
         model = Job
         resource_name = 'jobs'
@@ -288,6 +288,7 @@ class JobAnswerSetSerializer(serializers.ModelSerializer):
 
 class JobQuestionnaireSerializer(serializers.ModelSerializer):
     tag = serializers.SerializerMethodField()
+    vm_flavor = serializers.IntegerField(source='job_flavor_id')
 
     def get_tag(self, obj):
         return obj.make_tag()
