@@ -151,7 +151,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
     vm_settings = AdminJobSettingsSerializer(read_only=True)
-    vm_flavor = JobFlavorSerializer(read_only=True)
+    job_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = Job
         resource_name = 'jobs'

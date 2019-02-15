@@ -160,7 +160,7 @@ class JobSettings(models.Model):
 
 
 class VMCommand(models.Model):
-    job_settings = models.ForeignKey(JobSettings, help_text='job settings', related_name='vm_settings')
+    job_settings = models.ForeignKey(JobSettings, help_text='job settings', related_name='vm_command')
     cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
     image_name = models.CharField(max_length=255, help_text='Name of the VM Image to launch')
     cwl_base_command = models.TextField(help_text='JSON-encoded command array to run the  image\'s installed CWL engine')
@@ -226,9 +226,9 @@ class Job(models.Model):
     step = models.CharField(max_length=1, choices=JOB_STEPS, blank=True,
                             help_text="Job step (progress within Running state)")
     last_updated = models.DateTimeField(auto_now=True)
-    vm_settings = models.ForeignKey(JobSettings,
-                                    help_text='Collection of settings to use when running this job')
-    vm_flavor = models.ForeignKey(JobFlavor,
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Collection of settings to use when running this job')
+    job_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when launching VM for this job')
     vm_instance_name = models.CharField(max_length=255, blank=True,
                                         help_text="Name of the vm this job is/was running on.")
@@ -355,9 +355,9 @@ class JobQuestionnaire(models.Model):
                                                   "a job answer set.")
     share_group = models.ForeignKey(ShareGroup,
                                     help_text='Users who will have job output shared with them')
-    vm_settings = models.ForeignKey(JobSettings,
-                                    help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(JobFlavor,
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
+    job_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
@@ -517,9 +517,9 @@ class JobStrategy(models.Model):
     Specifies a VM strategy used to create a job.
     """
     name = models.CharField(max_length=255, help_text="Short user facing name")
-    vm_settings = models.ForeignKey(JobSettings,
-                                    help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(JobFlavor,
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Collection of settings to use when launching job VMs for this questionnaire')
+    job_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
@@ -534,7 +534,7 @@ class JobStrategy(models.Model):
 
     def __str__(self):
         return "JobStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(
-            self.pk, self.name, self.vm_flavor.name, self.volume_size_base, self.volume_size_factor)
+            self.pk, self.name, self.job_flavor.name, self.volume_size_base, self.volume_size_factor)
 
 
 class WorkflowConfiguration(models.Model):

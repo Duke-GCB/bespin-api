@@ -22,18 +22,18 @@ class LandoJobTests(TestCase):
                                                           fields=[])
         self.stage_group = JobFileStageGroup.objects.create(user=self.user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        vm_flavor = JobFlavor.objects.create(name='flavor1')
+        job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = JobSettings.objects.create()
+        self.job_settings = JobSettings.objects.create()
         self.job = Job.objects.create(workflow_version=workflow_version,
                                       job_order={},
                                       user=self.user,
                                       stage_group=self.stage_group,
                                       share_group=self.share_group,
                                       volume_size=100,
-                                      vm_settings=self.vm_settings,
-                                      vm_flavor=vm_flavor)
+                                      job_settings=self.job_settings,
+                                      job_flavor=job_flavor)
         DDSJobInputFile.objects.create(stage_group=self.stage_group,
                                        project_id='1234',
                                        file_id='5321',

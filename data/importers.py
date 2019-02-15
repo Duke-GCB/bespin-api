@@ -140,8 +140,8 @@ class JobQuestionnaireImporter(BaseCreator):
                  type_tag,
                  workflow_version,
                  system_job_order_dict,
-                 vm_settings_name,
-                 vm_flavor_name,
+                 job_settings_name,
+                 job_flavor_name,
                  share_group_name,
                  volume_size_base,
                  volume_size_factor,
@@ -154,23 +154,23 @@ class JobQuestionnaireImporter(BaseCreator):
         self.type_tag = type_tag
         self.workflow_version = workflow_version
         self.system_job_order_dict = system_job_order_dict
-        self.vm_flavor_name = vm_flavor_name
-        self.vm_settings_name = vm_settings_name
+        self.job_flavor_name = job_flavor_name
+        self.job_settings_name = job_settings_name
         self.share_group_name = share_group_name
         self.volume_size_base = volume_size_base
         self.volume_size_factor = volume_size_factor
         # django model objects built up
-        self.vm_flavor = None
+        self.job_flavor = None
         self.job_questionnaire = None
         self.cwl_document = cwl_document
 
     def _create_models(self):
         # Fail if JobSettings not found
-        self.vm_settings = JobSettings.objects.get(name=self.vm_settings_name)
-        self.log_creation(False, 'JobSettings', self.vm_settings_name, self.vm_settings.id)
-        # vm flavor
-        self.vm_flavor, created = JobFlavor.objects.get_or_create(name=self.vm_flavor_name)
-        self.log_creation(created, 'JobFlavor', self.vm_flavor_name, self.vm_flavor.id)
+        self.job_settings = JobSettings.objects.get(name=self.job_settings_name)
+        self.log_creation(False, 'JobSettings', self.job_settings_name, self.job_settings.id)
+        # job flavor
+        self.job_flavor, created = JobFlavor.objects.get_or_create(name=self.job_flavor_name)
+        self.log_creation(created, 'JobFlavor', self.job_flavor_name, self.job_flavor.id)
         # share group
         self.share_group, created = ShareGroup.objects.get_or_create(name=self.share_group_name)
         self.log_creation(created, 'ShareGroup', self.share_group_name, self.share_group.id)
@@ -191,8 +191,8 @@ class JobQuestionnaireImporter(BaseCreator):
             workflow_version=self.workflow_version,
             system_job_order_json=json.dumps(self.system_job_order_dict),
             user_fields_json=json.dumps(user_fields),
-            vm_settings=self.vm_settings,
-            vm_flavor=self.vm_flavor,
+            job_settings=self.job_settings,
+            job_flavor=self.job_flavor,
             share_group=self.share_group,
             volume_size_base=self.volume_size_base,
             volume_size_factor=self.volume_size_factor,
@@ -286,12 +286,12 @@ class WorkflowQuestionnaireImporter(object):
         self._load()
 
     def _validate_existing_objects(self):
-        vm_settings_name = self.data['vm_settings_name']
+        job_settings_name = self.data['job_settings_name']
         share_group_name = self.data['share_group_name']
         try:
-            JobSettings.objects.get(name=vm_settings_name)
+            JobSettings.objects.get(name=job_settings_name)
         except JobSettings.DoesNotExist as e:
-            raise ImporterException('JobSettings with name \'{}\' not found'.format(vm_settings_name), e)
+            raise ImporterException('JobSettings with name \'{}\' not found'.format(job_settings_name), e)
         try:
             ShareGroup.objects.get(name=share_group_name)
         except ShareGroup.DoesNotExist as e:
@@ -325,7 +325,7 @@ class WorkflowQuestionnaireImporter(object):
                 self.data.get('type_tag'),
                 wf_importer.workflow_version,
                 self.data.get('system_json'),
-                self.data.get('vm_settings_name'),
+                self.data.get('job_settings_name'),
                 self.data.get('vm_flavor_name'),
                 self.data.get('share_group_name'),
                 self.data.get('volume_size_base'),

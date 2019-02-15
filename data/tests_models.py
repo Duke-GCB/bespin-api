@@ -143,17 +143,17 @@ class JobTests(TestCase):
         self.user = User.objects.create_user('test_user')
         self.sample_json = "{'type': 1}"
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = JobSettings.objects.create()
+        self.job_settings = JobSettings.objects.create()
 
     def test_create(self):
         Job.objects.create(workflow_version=self.workflow_version, user=self.user,
                            job_order=self.sample_json,
                            share_group=self.share_group,
-                           vm_settings=self.vm_settings,
-                           vm_flavor=self.vm_flavor)
+                           job_settings=self.job_settings,
+                           job_flavor=self.job_flavor)
         job = Job.objects.first()
         self.assertEqual(self.workflow_version, job.workflow_version)
         self.assertEqual(self.user, job.user)
@@ -162,7 +162,7 @@ class JobTests(TestCase):
         self.assertIsNotNone(job.last_updated)
         self.assertEqual(job.vm_instance_name, '')
         self.assertEqual(job.vm_volume_name, '')
-        self.assertEqual(self.vm_settings, job.vm_settings)
+        self.assertEqual(self.job_settings, job.job_settings)
         self.assertIsNone(job.run_token)
         self.assertEqual(self.share_group, job.share_group)
         self.assertEqual(True, job.cleanup_vm)
@@ -173,29 +173,29 @@ class JobTests(TestCase):
                                  user=self.user,
                                  job_order=self.sample_json,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
                                  cleanup_vm=True)
         self.assertEqual(True, job.cleanup_vm)
         job = Job.objects.create(workflow_version=self.workflow_version,
                                  user=self.user,
                                  job_order=self.sample_json,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
                                  cleanup_vm=False)
         self.assertEqual(False, job.cleanup_vm)
 
     def test_create_with_name(self):
-        Job.objects.create(name='Rna Seq for B-Lab', user=self.user, share_group=self.share_group, vm_settings=self.vm_settings,
-                           vm_flavor=self.vm_flavor)
+        Job.objects.create(name='Rna Seq for B-Lab', user=self.user, share_group=self.share_group, job_settings=self.job_settings,
+                           job_flavor=self.job_flavor)
         job = Job.objects.first()
         self.assertEqual('Rna Seq for B-Lab', job.name)
 
     def test_state_changes(self):
         # Create job which should start in new state
         Job.objects.create(workflow_version=self.workflow_version, user=self.user, job_order=self.sample_json,
-                           share_group=self.share_group, vm_settings=self.vm_settings, vm_flavor=self.vm_flavor,
+                           share_group=self.share_group, job_settings=self.job_settings, job_flavor=self.job_flavor,
                            )
         job = Job.objects.first()
         self.assertEqual(Job.JOB_STATE_NEW, job.state)
@@ -237,45 +237,45 @@ class JobTests(TestCase):
                                                               fields=[])
         obj.sample_json = "{'type': 1}"
 
-        vm_flavor = JobFlavor.objects.create(name='flavor1')
+        job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        obj.vm_settings = JobSettings.objects.create()
+        obj.job_settings = JobSettings.objects.create()
 
         obj.job = Job.objects.create(workflow_version=obj.workflow_version, user=obj.user,
                                      job_order=obj.sample_json,
                                      share_group=share_group,
-                                     vm_settings=obj.vm_settings,
-                                     vm_flavor=vm_flavor)
+                                     job_settings=obj.job_settings,
+                                     job_flavor=job_flavor)
 
     def test_sorted_by_created(self):
         j1 = Job.objects.create(workflow_version=self.workflow_version,
                                 user=self.user,
                                 job_order=self.sample_json,
                                 share_group=self.share_group,
-                                vm_settings=self.vm_settings,
-                                vm_flavor=self.vm_flavor,
+                                job_settings=self.job_settings,
+                                job_flavor=self.job_flavor,
                                 )
         j2 = Job.objects.create(workflow_version=self.workflow_version,
                                 user=self.user,
                                 job_order=self.sample_json,
                                 share_group=self.share_group,
-                                vm_settings=self.vm_settings,
-                                vm_flavor=self.vm_flavor,
+                                job_settings=self.job_settings,
+                                job_flavor=self.job_flavor,
                                 )
         j3 = Job.objects.create(workflow_version=self.workflow_version,
                                 user=self.user,
                                 job_order=self.sample_json,
                                 share_group=self.share_group,
-                                vm_settings=self.vm_settings,
-                                vm_flavor=self.vm_flavor,
+                                job_settings=self.job_settings,
+                                job_flavor=self.job_flavor,
                                 )
         j4 = Job.objects.create(workflow_version=self.workflow_version,
                                 user=self.user,
                                 job_order=self.sample_json,
                                 share_group=self.share_group,
-                                vm_settings=self.vm_settings,
-                                vm_flavor=self.vm_flavor,
+                                job_settings=self.job_settings,
+                                job_flavor=self.job_flavor,
                                 )
         job_ids = [job.id for job in Job.objects.all()]
         self.assertEqual([j1.id, j2.id, j3.id, j4.id], job_ids)
@@ -284,8 +284,8 @@ class JobTests(TestCase):
                                 user=self.user,
                                 job_order=self.sample_json,
                                 share_group=self.share_group,
-                                vm_settings=self.vm_settings,
-                                vm_flavor=self.vm_flavor,
+                                job_settings=self.job_settings,
+                                job_flavor=self.job_flavor,
                                 )
         job_ids = [job.id for job in Job.objects.all()]
         self.assertEqual([j1.id, j3.id, j4.id, j2.id], job_ids)
@@ -294,8 +294,8 @@ class JobTests(TestCase):
         job = Job.objects.create(workflow_version=self.workflow_version, user=self.user,
                                  job_order=self.sample_json,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
                                  )
         other_user = User.objects.create_user('other_user')
         stage_group = JobFileStageGroup.objects.create(user=other_user)
@@ -309,8 +309,8 @@ class JobTests(TestCase):
                                  job_order=self.sample_json,
                                  run_token=job_token,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
                                  )
         self.assertEqual(job.run_token, job_token)
 
@@ -319,8 +319,8 @@ class JobTests(TestCase):
         job2 = Job.objects.create(workflow_version=self.workflow_version, user=self.user,
                                   job_order=self.sample_json,
                                   share_group=self.share_group,
-                                  vm_settings=self.vm_settings,
-                                  vm_flavor=self.vm_flavor,
+                                  job_settings=self.job_settings,
+                                  job_flavor=self.job_flavor,
                                   )
         self.assertEqual(job2.run_token, None)
         job2.run_token = job_token2
@@ -332,16 +332,16 @@ class JobTests(TestCase):
                                  job_order=self.sample_json,
                                  run_token=job_token,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
                                  )
         with self.assertRaises(IntegrityError) as raised_error:
             job2 = Job.objects.create(workflow_version=self.workflow_version, user=self.user,
                                       job_order=self.sample_json,
                                       run_token=job_token,
                                       share_group=self.share_group,
-                                      vm_settings=self.vm_settings,
-                                      vm_flavor=self.vm_flavor,
+                                      job_settings=self.job_settings,
+                                      job_flavor=self.job_flavor,
                                       )
         self.assertIn("unique constraint", str(raised_error.exception).lower())
 
@@ -350,8 +350,8 @@ class JobTests(TestCase):
                                  user=self.user,
                                  job_order=self.sample_json,
                                  share_group=self.share_group,
-                                 vm_settings=self.vm_settings,
-                                 vm_flavor=self.vm_flavor)
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor)
         job.step = Job.JOB_STEP_ORGANIZE_OUTPUT_PROJECT
         job.save()
         self.assertEqual(Job.objects.first().step, Job.JOB_STEP_ORGANIZE_OUTPUT_PROJECT)
@@ -359,7 +359,7 @@ class JobTests(TestCase):
     def test_job_activity_creation(self):
         # Create job which should start in new state
         job = Job.objects.create(workflow_version=self.workflow_version, user=self.user, job_order=self.sample_json,
-                           share_group=self.share_group, vm_settings=self.vm_settings, vm_flavor=self.vm_flavor)
+                           share_group=self.share_group, job_settings=self.job_settings, job_flavor=self.job_flavor)
 
         def get_activity_details(job):
             return [(item.state, item.step) for item in JobActivity.objects.filter(job=job).order_by('created')]
@@ -422,7 +422,7 @@ class JobTests(TestCase):
 
     def test_record_output_project_step(self):
         job = Job.objects.create(workflow_version=self.workflow_version, user=self.user, job_order=self.sample_json,
-                                 share_group=self.share_group, vm_settings=self.vm_settings, vm_flavor=self.vm_flavor)
+                                 share_group=self.share_group, job_settings=self.job_settings, job_flavor=self.job_flavor)
         job.state = Job.JOB_STATE_RUNNING
         job.step = Job.JOB_STEP_RECORD_OUTPUT_PROJECT
         job.save()
@@ -585,8 +585,8 @@ class JobQuestionnaireTests(TestCase):
     def add_vmsettings_fields(obj):
         obj.vm_project = VMProject.objects.create(name='project')
         obj.cloud_settings = CloudSettings.objects.create(name='cloud', vm_project=obj.vm_project)
-        obj.vm_settings = JobSettings.objects.create(name='settings')
-        obj.vm_flavor = JobFlavor.objects.create(name='flavor')
+        obj.job_settings = JobSettings.objects.create(name='settings')
+        obj.job_flavor = JobFlavor.objects.create(name='flavor')
 
     @staticmethod
     def add_workflowversion_fields(obj):
@@ -616,8 +616,8 @@ class JobQuestionnaireTests(TestCase):
                                                         workflow_version=self.workflow_version,
                                                         system_job_order_json='{"system_input": "foo"}',
                                                         share_group=self.share_group,
-                                                        vm_settings=self.settings1,
-                                                        vm_flavor=self.flavor1,
+                                                        job_settings=self.settings1,
+                                                        job_flavor=self.flavor1,
                                                         volume_size_base=10,
                                                         volume_size_factor=5,
                                                         type=self.questionnaire_type
@@ -627,8 +627,8 @@ class JobQuestionnaireTests(TestCase):
                                                         workflow_version=self.workflow_version,
                                                         system_job_order_json='{"system_input":"bar"}',
                                                         share_group=self.share_group,
-                                                        vm_settings=self.settings2,
-                                                        vm_flavor=self.flavor2,
+                                                        job_settings=self.settings2,
+                                                        job_flavor=self.flavor2,
                                                         volume_size_base=3,
                                                         volume_size_factor=2,
                                                         type=self.questionnaire_type
@@ -637,8 +637,8 @@ class JobQuestionnaireTests(TestCase):
         self.assertEqual('Ant RnaSeq', ant_questionnaire.name)
         self.assertEqual('Uses reference genome xyz and gene index abc', ant_questionnaire.description)
         self.assertEqual('foo',json.loads(ant_questionnaire.system_job_order_json)['system_input'])
-        self.assertEqual('flavor1', ant_questionnaire.vm_flavor.name)
-        #self.assertEqual('bespin-project', ant_questionnaire.vm_settings.cloud_settings.vm_project.name)
+        self.assertEqual('flavor1', ant_questionnaire.job_flavor.name)
+        #self.assertEqual('bespin-project', ant_questionnaire.job_settings.cloud_settings.vm_project.name)
         self.assertEqual(self.share_group, ant_questionnaire.share_group)
         self.assertEqual(10, ant_questionnaire.volume_size_base)
         self.assertEqual(5, ant_questionnaire.volume_size_factor)
@@ -647,8 +647,8 @@ class JobQuestionnaireTests(TestCase):
         self.assertEqual('Human RnaSeq', human_questionnaire.name)
         self.assertEqual('Uses reference genome zew and gene index def', human_questionnaire.description)
         self.assertEqual('bar',json.loads(human_questionnaire.system_job_order_json)['system_input'])
-        self.assertEqual('flavor2', human_questionnaire.vm_flavor.name)
-        # TODO self.assertEqual('bespin-project', human_questionnaire.vm_settings.cloud_settings.vm_project.name)
+        self.assertEqual('flavor2', human_questionnaire.job_flavor.name)
+        # TODO self.assertEqual('bespin-project', human_questionnaire.job_settings.cloud_settings.vm_project.name)
         self.assertEqual(self.share_group, human_questionnaire.share_group)
         self.assertEqual(3, human_questionnaire.volume_size_base)
         self.assertEqual(2, human_questionnaire.volume_size_factor)
@@ -659,8 +659,8 @@ class JobQuestionnaireTests(TestCase):
                                                         workflow_version=self.workflow_version,
                                                         system_job_order_json='{"system_input": "foo"}',
                                                         share_group=self.share_group,
-                                                        vm_settings=self.settings1,
-                                                        vm_flavor=self.flavor1,
+                                                        job_settings=self.settings1,
+                                                        job_flavor=self.flavor1,
                                                         volume_size_base=10,
                                                         volume_size_factor=5,
                                                         type=self.questionnaire_type
@@ -691,8 +691,8 @@ class JobAnswerSetTests(TestCase):
                                                              workflow_version=self.workflow_version,
                                                              system_job_order_json='{"system_input": "foo"}',
                                                              share_group=self.share_group,
-                                                             vm_settings=self.vm_settings,
-                                                             vm_flavor=self.vm_flavor,
+                                                             job_settings=self.job_settings,
+                                                             job_flavor=self.job_flavor,
                                                              type=self.questionnaire_type,
                                                              )
 
@@ -972,14 +972,14 @@ class WorkflowConfigurationTestCase(TestCase):
         self.workflow = Workflow.objects.create(name='exomeseq', tag='exomeseq')
         self.workflow2 = Workflow.objects.create(name='exomeseq2', tag='exomseq2')
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = JobSettings.objects.create()
+        self.job_settings = JobSettings.objects.create()
         self.vm_strategy = JobStrategy.objects.create(
             name='default',
-            vm_settings=self.vm_settings,
-            vm_flavor=self.vm_flavor
+            job_settings=self.job_settings,
+            job_flavor=self.job_flavor
         )
 
     def test_workflow_and_tag_unique(self):

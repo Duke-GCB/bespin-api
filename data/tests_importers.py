@@ -2,7 +2,7 @@ from django.test import TestCase
 from data.importers import CWLDocument, MethodsDocumentContents, SCHEMA_ORG_CITATION, \
     HTTPS_DOI_URL, WorkflowQuestionnaireImporter, ImporterException
 from data.models import ShareGroup
-from data.tests_api import add_vm_settings
+from data.tests_api import add_job_settings
 from unittest.mock import patch, Mock
 
 
@@ -88,7 +88,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
 
     def setUp(self):
         self.share_group_name = 'test-share-group'
-        self.vm_settings_name = 'test-vm-settings'
+        self.job_settings_name = 'test-vm-settings'
         self.data = {
             "cwl_url": "https://example.org/exome-seq.cwl",
             "workflow_version_number": 12,
@@ -105,7 +105,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
                     }
                 ]
             },
-            "vm_settings_name": self.vm_settings_name,
+            "job_settings_name": self.job_settings_name,
             "vm_flavor_name": "test-flavor",
             "share_group_name": self.share_group_name,
             "volume_size_base": 100,
@@ -113,16 +113,16 @@ class JobQuestionnaireImporterTestCase(TestCase):
             "type_tag": "human",
         }
 
-    def test_raises_on_vm_settings_name_not_found(self):
+    def test_raises_on_job_settings_name_not_found(self):
         ShareGroup.objects.create(name=self.share_group_name)
-        self.data['vm_settings_name'] = 'missing'
+        self.data['job_settings_name'] = 'missing'
         importer = WorkflowQuestionnaireImporter(self.data)
         with self.assertRaises(ImporterException) as cm:
             importer.run()
         self.assertIn('JobSettings', cm.exception.message)
 
     def test_raises_share_group_name_not_found(self):
-        add_vm_settings(self, settings_name=self.vm_settings_name)
+        add_job_settings(self, settings_name=self.job_settings_name)
         self.data['share_group_name'] = 'missing'
         importer = WorkflowQuestionnaireImporter(self.data)
         with self.assertRaises(ImporterException) as cm:
@@ -142,7 +142,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
         mock_jqi_run = Mock()
         mock_job_questionnaire_importer.return_value.run = mock_jqi_run
 
-        add_vm_settings(self, settings_name=self.vm_settings_name)
+        add_job_settings(self, settings_name=self.job_settings_name)
         self.share_group = ShareGroup.objects.create(name=self.share_group_name)
 
         importer = WorkflowQuestionnaireImporter(self.data)
@@ -171,7 +171,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
             self.data['type_tag'],
             mock_workflow_version,
             self.data['system_json'],
-            self.data['vm_settings_name'],
+            self.data['job_settings_name'],
             self.data['vm_flavor_name'],
             self.data['share_group_name'],
             self.data['volume_size_base'],
@@ -186,7 +186,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
     @patch('data.importers.JobQuestionnaireImporter')
     @patch('data.importers.CWLDocument')
     def test_captures_wfimporter_exceptions(self, mock_cwl_document, mock_jobquestionnaire_importer, mock_workflow_importer):
-        add_vm_settings(self, settings_name=self.vm_settings_name)
+        add_job_settings(self, settings_name=self.job_settings_name)
         self.share_group = ShareGroup.objects.create(name=self.share_group_name)
         mock_workflow_importer.side_effect = Exception()
         importer = WorkflowQuestionnaireImporter(self.data)
@@ -198,7 +198,7 @@ class JobQuestionnaireImporterTestCase(TestCase):
     @patch('data.importers.JobQuestionnaireImporter')
     @patch('data.importers.CWLDocument')
     def test_captures_jqimporter_exceptions(self, mock_cwl_document, mock_jobquestionnaire_importer, mock_workflow_importer):
-        add_vm_settings(self, settings_name=self.vm_settings_name)
+        add_job_settings(self, settings_name=self.job_settings_name)
         self.share_group = ShareGroup.objects.create(name=self.share_group_name)
         mock_jobquestionnaire_importer.side_effect = Exception()
         importer = WorkflowQuestionnaireImporter(self.data)
