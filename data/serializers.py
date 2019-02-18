@@ -141,12 +141,19 @@ class AdminCloudSettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AdminJobSettingsSerializer(serializers.ModelSerializer):
-    cloud_settings = AdminCloudSettingsSerializer(read_only=True)
+class AdminVMSettingsSerializer(serializers.ModelSerializer):
+    cloud_settings = AdminCloudSettingsSerializer(read_only=True, required=False, source='vm_command.cloud_settings')
+    image_name = serializers.CharField(source='vm_command.image_name')
+    cwl_base_command = serializers.CharField(source='vm_command.cwl_base_command')
+    cwl_post_process_command = serializers.CharField(source='vm_command.cwl_post_process_command')
+    cwl_pre_process_command = serializers.CharField(source='vm_command.cwl_pre_process_command')
     class Meta:
         model = JobSettings
         resource_name = 'vm-settings'
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'cloud_settings', 'image_name',
+            'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command'
+        ]
 
 
 class AdminJobSerializer(serializers.ModelSerializer):
@@ -154,7 +161,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
-    vm_settings = AdminJobSettingsSerializer(read_only=True, source='job_settings')
+    vm_settings = AdminVMSettingsSerializer(read_only=True, source='job_settings')
     vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     class Meta:
         model = Job

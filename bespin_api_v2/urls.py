@@ -7,7 +7,7 @@ router = routers.DefaultRouter()
 router.register(r'workflows', data_api.WorkflowsViewSet, 'v2-workflow')
 router.register(r'workflow-versions', api.WorkflowVersionsViewSet, 'v2-workflowversion')
 router.register(r'workflow-configurations', api.WorkflowConfigurationViewSet, 'v2-workflowconfigurations')
-router.register(r'vm-strategies', api.VMStrategyViewSet, 'v2-vmstrategies')
+router.register(r'job-strategies', api.JobStrategyViewSet, 'v2-jobstrategies')
 router.register(r'share-groups', api.ShareGroupViewSet, 'v2-sharegroup')
 router.register(r'jobs', data_api.JobsViewSet, 'v2-job')
 router.register(r'job-file-stage-groups', data_api.JobFileStageGroupViewSet, 'v2-jobfilestagegroup')
@@ -19,6 +19,13 @@ router.register(r'dds-user-credentials', data_api.DDSUserCredViewSet, 'v2-ddsuse
 router.register(r'admin/workflows', api.AdminWorkflowViewSet, 'v2-admin_workflow')
 router.register(r'admin/workflow-versions', api.AdminWorkflowVersionViewSet, 'v2-admin_workflowversion')
 router.register(r'admin/workflow-configurations', api.AdminWorkflowConfigurationViewSet, 'v2-admin_workflowconfiguration')
+router.register(r'admin/jobs', api.AdminJobsViewSet, 'v2-admin_job')
+router.register(r'admin/job-file-stage-groups', api.AdminJobFileStageGroupViewSet, 'v2-admin_jobfilestagegroup')
+router.register(r'admin/dds-user-credentials', api.AdminDDSUserCredentialsViewSet, 'v2-admin_ddsusercredentials')
+router.register(r'admin/job-errors', api.AdminJobErrorViewSet, 'v2-admin_joberror')
+router.register(r'admin/job-dds-output-projects', api.AdminJobDDSOutputProjectViewSet, 'v2-admin_jobddsoutputproject')
+router.register(r'admin/share-groups', api.AdminShareGroupViewSet, 'v2-admin_sharegroup')
+router.register(r'admin/workflow-methods-documents', api.WorkflowMethodsDocumentViewSet, 'v2-admin_workflowmethodsdocument')
 
 urlpatterns = [
     url(r'^', include(router.urls)),

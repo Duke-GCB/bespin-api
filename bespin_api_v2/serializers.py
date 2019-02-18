@@ -1,10 +1,23 @@
 import json
-from rest_framework import serializers, fields
+from rest_framework import serializers, fields, permissions, viewsets
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
-    ShareGroup, JobFlavor, Job
+    ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
+    WorkflowMethodsDocument, JobSettings, LandoConnection, VMCommand, K8sStepCommand
+from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
+from data.serializers import AdminJobSerializer, JobFileStageGroupSerializer, AdminDDSUserCredSerializer, \
+    JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
+    WorkflowMethodsDocumentSerializer, JobDDSOutputProjectSerializer, UserSerializer
+
+
+class JSONStrField(serializers.Field):
+    def to_representation(self, value):
+        return json.loads(value)
+
+    def to_internal_value(self, data):
+        return json.dumps(data)
 
 
 class AdminWorkflowSerializer(serializers.ModelSerializer):
@@ -40,33 +53,25 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
 
 
 class WorkflowConfigurationSerializer(serializers.ModelSerializer):
-    default_vm_strategy = serializers.IntegerField(source='default_job_strategy_id')
     class Meta:
         model = WorkflowConfiguration
         resource_name = 'workflow-configuration'
-        fields = ('id', 'tag', 'workflow', 'system_job_order', 'default_vm_strategy', 'share_group', )
+        fields = ('id', 'tag', 'workflow', 'system_job_order', 'default_job_strategy', 'share_group', )
 
 
-class VMFlavorSerializer(serializers.ModelSerializer):
-    """
-    Serializes new JobFlavor model into old VMFlavor format to maintain original vm-flavors api
-    """
+class JobFlavorSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobFlavor
-        resource_name = 'vm-flavors'
+        resource_name = 'job-flavors'
         fields = '__all__'
 
 
-class VMStrategySerializer(serializers.ModelSerializer):
-    """
-    Serializes new JobStrategy model into old VMStrategy format to maintain original vm-strategies api
-    """
-    vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
-    vm_settings = serializers.IntegerField(source='job_settings_id')
+class JobStrategySerializer(serializers.ModelSerializer):
+    job_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = JobStrategy
-        resource_name = 'vm-strategies'
-        fields = ['id', 'name', 'vm_settings', 'vm_flavor', 'volume_size_base', 'volume_size_factor', 'volume_mounts']
+        resource_name = 'job-strategies'
+        fields = ['id', 'name', 'job_settings', 'job_flavor', 'volume_size_base', 'volume_size_factor', 'volume_mounts']
 
 
 class JobTemplateMinimalSerializer(serializers.Serializer):
@@ -101,3 +106,52 @@ class ShareGroupSerializer(serializers.ModelSerializer):
         model = ShareGroup
         resource_name = 'share-group'
         fields = '__all__'
+
+
+class AdminVMCommand(serializers.ModelSerializer):
+    cwl_base_command = JSONStrField()
+    cwl_post_process_command = JSONStrField()
+    cwl_pre_process_command = JSONStrField()
+    class Meta:
+        model = VMCommand
+        resource_name = 'vm-command'
+        fields = ('image_name', 'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command')
+
+
+class AdminJobSettingsSerializer(serializers.ModelSerializer):
+    vm_command = AdminVMCommand(read_only=True)
+    k8s_step_commands = serializers.SerializerMethodField()
+
+    def get_k8s_step_commands(self, obj):
+        step_dict = {}
+        k8s_command_set = obj.k8s_command_set.get()
+        if k8s_command_set:
+            for step in k8s_command_set.step_commands.all():
+                step_dict[step.step_type] = {
+                    'image_name': step.image_name,
+                    'cpu': step.cpu,
+                    'memory': step.memory,
+                    'base_command': step.base_command,
+                }
+        return step_dict
+
+    class Meta:
+        model = JobSettings
+        resource_name = 'job-settings'
+        fields = ('settings_type', 'vm_command', 'k8s_step_commands')
+
+
+class AdminJobSerializer(serializers.ModelSerializer):
+    workflow_version = WorkflowVersionSerializer(required=False)
+    output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
+    name = serializers.CharField(required=False)
+    user = UserSerializer(read_only=True)
+    job_settings = AdminJobSettingsSerializer(read_only=True)
+    job_flavor = JobFlavorSerializer(read_only=True)
+    class Meta:
+        model = Job
+        resource_name = 'jobs'
+        fields = ('id', 'workflow_version', 'user', 'name', 'created', 'state', 'step', 'last_updated',
+                  'job_settings', 'job_flavor', 'vm_instance_name', 'vm_volume_name', 'vm_volume_mounts', 'job_order',
+                  'output_project', 'stage_group', 'volume_size', 'share_group', 'cleanup_vm', 'fund_code')
+        read_only_fields = ('share_group', 'vm_settings',)

@@ -192,6 +192,41 @@ class VMCommand(models.Model):
             self.pk, self.job_settings.name, self.image_name)
 
 
+class K8sStepCommand(models.Model):
+    """
+    For memory field see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory.
+    """
+    STAGE_DATA_STEP = 'stage_data'
+    RUN_WORKFLOW_STEP = 'run_workflow'
+    ORGANIZE_OUTPUT_STEP = 'organize_output'
+    SAVE_OUTPUT_STEP = 'save_output'
+    RECORD_OUTPUT_PROJECT = 'record_output_project'
+    STEP_TYPES = [
+        (STAGE_DATA_STEP, 'Stage Data'),
+        (RUN_WORKFLOW_STEP, 'Run Workflow'),
+        (ORGANIZE_OUTPUT_STEP, 'Organize Output'),
+        (SAVE_OUTPUT_STEP, 'Save Output'),
+        (RECORD_OUTPUT_PROJECT, "Record Output Project"),
+    ]
+    step_type = models.TextField(choices=STEP_TYPES)
+    image_name = models.CharField(max_length=255, help_text='Name of the image to run for this step')
+    cpu = models.IntegerField(help_text='Number of cpu to request when running this step')
+    memory = models.CharField(max_length=255, help_text='Memory in k8s units to request when running this step')
+    base_command = JSONField(help_text='JSON array with base command to run')
+
+    def __str__(self):
+        return "K8sStepCommand - pk: {} step_type: '{}' image_name: '{}' base_command: '{}'".format(
+            self.pk, self.step_type, self.image_name, self.base_command)
+
+
+class K8sCommandSet(models.Model):
+    job_settings = models.ForeignKey(JobSettings, help_text='job settings', related_name='k8s_command_set')
+    step_commands = models.ManyToManyField(K8sStepCommand, help_text="Steps to be used by this set")
+
+    def __str__(self):
+        return "K8sCommandSet - pk: {} job_settings.name: '{}'".format(self.pk, self.job_settings.name)
+
+
 class Job(models.Model):
     """
     Instance of a workflow that is in some state of progress.
