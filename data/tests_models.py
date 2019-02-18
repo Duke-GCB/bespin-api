@@ -3,7 +3,8 @@ from data.models import DDSEndpoint, DDSUserCredential
 from data.models import Workflow, WorkflowVersion
 from data.models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, JobError
 from data.models import LandoConnection
-from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, CloudSettings
+from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, \
+    CloudSettings, VMCommand
 from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
@@ -144,8 +145,7 @@ class JobTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create()
 
     def test_create(self):
         Job.objects.create(workflow_version=self.workflow_version, user=self.user,
@@ -238,8 +238,7 @@ class JobTests(TestCase):
 
         job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        obj.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        obj.job_settings = JobSettings.objects.create()
 
         obj.job = Job.objects.create(workflow_version=obj.workflow_version, user=obj.user,
                                      job_order=obj.sample_json,
@@ -584,7 +583,7 @@ class JobQuestionnaireTests(TestCase):
     def add_vmsettings_fields(obj):
         obj.vm_project = VMProject.objects.create(name='project')
         obj.cloud_settings = CloudSettings.objects.create(name='cloud', vm_project=obj.vm_project)
-        obj.job_settings = JobSettings.objects.create(name='settings', cloud_settings=obj.cloud_settings)
+        obj.job_settings = JobSettings.objects.create(name='settings')
         obj.job_flavor = JobFlavor.objects.create(name='flavor')
 
     @staticmethod
@@ -605,10 +604,8 @@ class JobQuestionnaireTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.cloud = CloudSettings.objects.create(name='cloud',
                                                   vm_project=self.project)
-        self.settings1 = JobSettings.objects.create(name='settings1',
-                                                   cloud_settings=self.cloud)
-        self.settings2 = JobSettings.objects.create(name='settings2',
-                                                   cloud_settings=self.cloud)
+        self.settings1 = JobSettings.objects.create(name='settings1')
+        self.settings2 = JobSettings.objects.create(name='settings2')
         self.questionnaire_type = JobQuestionnaireType.objects.create(tag='human')
 
     def test_two_questionnaires(self):
@@ -639,7 +636,6 @@ class JobQuestionnaireTests(TestCase):
         self.assertEqual('Uses reference genome xyz and gene index abc', ant_questionnaire.description)
         self.assertEqual('foo',json.loads(ant_questionnaire.system_job_order_json)['system_input'])
         self.assertEqual('flavor1', ant_questionnaire.job_flavor.name)
-        self.assertEqual('bespin-project', ant_questionnaire.job_settings.cloud_settings.vm_project.name)
         self.assertEqual(self.share_group, ant_questionnaire.share_group)
         self.assertEqual(10, ant_questionnaire.volume_size_base)
         self.assertEqual(5, ant_questionnaire.volume_size_factor)
@@ -649,7 +645,6 @@ class JobQuestionnaireTests(TestCase):
         self.assertEqual('Uses reference genome zew and gene index def', human_questionnaire.description)
         self.assertEqual('bar',json.loads(human_questionnaire.system_job_order_json)['system_input'])
         self.assertEqual('flavor2', human_questionnaire.job_flavor.name)
-        self.assertEqual('bespin-project', human_questionnaire.job_settings.cloud_settings.vm_project.name)
         self.assertEqual(self.share_group, human_questionnaire.share_group)
         self.assertEqual(3, human_questionnaire.volume_size_base)
         self.assertEqual(2, human_questionnaire.volume_size_factor)
@@ -897,41 +892,42 @@ class CloudSettingsTests(TestCase):
 
 
 class JobSettingsTests(TestCase):
+    def test_unique_names(self):
+        JobSettings.objects.create(name='settings1')
+        with self.assertRaises(IntegrityError):
+            JobSettings.objects.create(name='settings1')
+
+
+class VMCommandTests(TestCase):
 
     def setUp(self):
         self.create_args = {
             'cloud_settings': CloudSettings.objects.create(name='cloud1', vm_project=VMProject.objects.create(name='project1')),
+            'job_settings': JobSettings.objects.create()
         }
 
     def test_creates_with_required_fks(self):
-        JobSettings.objects.create(**self.create_args)
+        VMCommand.objects.create(**self.create_args)
 
     def test_requires_cloud_settings(self):
         del self.create_args['cloud_settings']
         with self.assertRaises(IntegrityError) as val:
-            JobSettings.objects.create(**self.create_args)
+            VMCommand.objects.create(**self.create_args)
 
     def test_validates_fields(self):
-        job_settings = JobSettings.objects.create(**self.create_args)
+        vm_command = VMCommand.objects.create(**self.create_args)
         with self.assertRaises(ValidationError) as val:
-            job_settings.clean_fields()
+            vm_command.clean_fields()
         error_dict = val.exception.error_dict
         error_keys = set(error_dict.keys())
         expected_error_keys ={'image_name',
                               'cwl_base_command'}
         self.assertEqual(error_keys, expected_error_keys)
 
-        # name has a default, should not fail validation
-        self.assertNotIn('name', error_dict)
         # other keys not required, should not fail validation
         self.assertNotIn('cwl_pre_process_command', error_dict)
         self.assertNotIn('cwl_post_process_command', error_dict)
 
-    def test_unique_names(self):
-        self.create_args['name'] = 'settings1'
-        JobSettings.objects.create(**self.create_args)
-        with self.assertRaises(IntegrityError):
-            JobSettings.objects.create(**self.create_args)
 
 
 class JobQuestionnaireTypeTests(TestCase):
@@ -970,8 +966,7 @@ class WorkflowConfigurationTestCase(TestCase):
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create()
         self.vm_strategy = VMStrategy.objects.create(
             name='default',
             job_settings=self.job_settings,

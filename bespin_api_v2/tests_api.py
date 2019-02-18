@@ -174,8 +174,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         )
         job_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        job_settings = JobSettings.objects.create()
 
         self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
@@ -265,9 +264,7 @@ class VMStrategyViewSetTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
         self.job_flavor = JobFlavor.objects.create(name='large')
-        vm_project = VMProject.objects.create()
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create()
 
     def test_list_fails_unauthenticated(self):
         self.user_login.become_unauthorized()
@@ -354,9 +351,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             fields=[{"name":"threads", "type": "int"}],
         )
         job_flavor = JobFlavor.objects.create(name='large')
-        vm_project = VMProject.objects.create()
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        job_settings = JobSettings.objects.create()
 
         self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
@@ -496,8 +491,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
         )
         job_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        job_settings = JobSettings.objects.create()
 
         self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()

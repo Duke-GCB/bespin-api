@@ -382,7 +382,7 @@ def add_job_settings(obj, project_name='project1',
                     settings_name='settings1'):
     vm_project = VMProject.objects.create(name=project_name)
     obj.cloud_settings = CloudSettings.objects.create(name=cloud_name, vm_project=vm_project)
-    obj.job_settings = JobSettings.objects.create(name=settings_name, cloud_settings=obj.cloud_settings)
+    obj.job_settings = JobSettings.objects.create(name=settings_name)
 
 
 class JobsTestCase(APITestCase):

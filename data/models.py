@@ -144,11 +144,42 @@ class CloudSettings(models.Model):
         verbose_name_plural = "Cloud Settings Collections"
 
 
+class LandoConnection(models.Model):
+    """
+    Settings used to connect with lando to start, restart or cancel a job.
+    """
+    host = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    queue_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return "LandoConnection - pk: {} host: '{}'".format(self.pk, self.host,)
+
+
 class JobSettings(models.Model):
     """
     A collection of settings that specify details for VMs launched
     """
+    VM_TYPE = 'vm'
+    K8S_TYPE = 'k8s'
+    TYPES = [
+        (VM_TYPE, 'VM Job Settings'),
+        (K8S_TYPE, 'K8s Job Settings'),
+    ]
     name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
+    settings_type = models.TextField(choices=TYPES, default=VM_TYPE)
+    lando_connection = models.ForeignKey(LandoConnection, help_text='Lando connection to use for this job settings',
+                                         null=True)
+    def __str__(self):
+        return "JobSettings - pk: {} name: '{}' settings_type: '{}'".format(self.pk, self.name, self.settings_type)
+
+    class Meta:
+        verbose_name_plural = "Job Settings Collections"
+
+
+class VMCommand(models.Model):
+    job_settings = models.OneToOneField(JobSettings, help_text='job settings', related_name='vm_command')
     cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
     image_name = models.CharField(max_length=255, help_text='Name of the VM Image to launch')
     cwl_base_command = models.TextField(help_text='JSON-encoded command array to run the  image\'s installed CWL engine')
@@ -156,12 +187,9 @@ class JobSettings(models.Model):
                                                 help_text='JSON-encoded command array to run after workflow completes')
     cwl_pre_process_command = models.TextField(blank=True,
                                                 help_text='JSON-encoded command array to run before cwl_base_command')
-
     def __str__(self):
-        return "JobSettings - pk: {} name: '{}' image_name: '{}'".format(self.pk, self.name, self.image_name,)
-
-    class Meta:
-        verbose_name_plural = "Job Settings Collections"
+        return "VMCommand - pk: {} settings name: '{}' image_name: '{}'".format(
+            self.pk, self.job_settings.name, self.image_name)
 
 
 class Job(models.Model):
@@ -310,19 +338,6 @@ class JobError(models.Model):
 
     def __str__(self):
         return "JobError - pk: {} job.pk: {} job_step: '{}'".format(self.pk, self.job.pk, self.get_job_step_display())
-
-
-class LandoConnection(models.Model):
-    """
-    Settings used to connect with lando to start, restart or cancel a job.
-    """
-    host = models.CharField(max_length=255)
-    username = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-    queue_name = models.CharField(max_length=255)
-
-    def __str__(self):
-        return "LandoConnection - pk: {} host: '{}'".format(self.pk, self.host,)
 
 
 class JobQuestionnaireType(models.Model):

@@ -21,8 +21,7 @@ class JobUsageTests(TestCase):
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.job_settings = JobSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_settings = JobSettings.objects.create()
         self.job = Job.objects.create(workflow_version=self.workflow_version,
                                       user=self.user,
                                       job_order=self.sample_json,

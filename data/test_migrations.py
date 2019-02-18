@@ -6,6 +6,7 @@ from django.test import TransactionTestCase
 from django.db.migrations.executor import MigrationExecutor
 from django.db import connection
 from django.core.management import call_command
+import json
 
 
 class TestMigrations(TransactionTestCase):
@@ -191,3 +192,78 @@ class JSONFieldMigrationTestCase(TestMigrations):
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0].system_job_order, {})
         self.assertEqual(items[1].system_job_order, {'color': 'blue', 'data': {'count': 3}})
+
+
+class VMCommandMigrationTestCase(TestMigrations):
+    migrate_from = '0082_merge_20190215_2124'
+    migrate_to = '0085_auto_20190218_1453'
+    django_application = 'data'
+
+    def setUpBeforeMigration(self, apps):
+        CloudSettings = apps.get_model('data', 'CloudSettings')
+        VMProject = apps.get_model('data', 'VMProject')
+        JobSettings = apps.get_model('data', 'JobSettings')
+        LandoConnection = apps.get_model('data', 'LandoConnection')
+
+        # create a lando connection that will be the default after the migration (the first connection)
+        LandoConnection.objects.create(
+            host='somehost',
+            username='lando',
+            password='secret',
+            queue_name='somequeue'
+        )
+
+        cloud_settings = CloudSettings.objects.create(
+            name='mycloud',
+            vm_project=VMProject.objects.create(name='someproject'),
+            ssh_key_name='somename',
+            network_name='somenetwork',
+        )
+        JobSettings.objects.create(
+            name='settings1',
+            cloud_settings=cloud_settings,
+            image_name='myimage1',
+            cwl_base_command=json.dumps(['cwltool']),
+            cwl_post_process_command=json.dumps(['cleanup']),
+            cwl_pre_process_command=json.dumps(['prep']),
+        )
+        JobSettings.objects.create(
+            name='settings2',
+            cloud_settings=cloud_settings,
+            image_name='myimage2',
+            cwl_base_command=json.dumps(['cwltool2']),
+            cwl_post_process_command=json.dumps(['cleanup2']),
+            cwl_pre_process_command=json.dumps(['prep2']),
+        )
+
+    def test_migrated_vm_settings_fields(self):
+        JobSettings = self.apps.get_model('data', 'JobSettings')
+        LandoConnection = self.apps.get_model('data', 'LandoConnection')
+        VMCommand = self.apps.get_model('data', 'VMCommand')
+
+        first_lando_connection = LandoConnection.objects.first()
+        job_settings = JobSettings.objects.order_by('name')
+        self.assertEqual(len(job_settings), 2)
+        self.assertEqual(job_settings[0].name, 'settings1')
+        self.assertEqual(job_settings[0].settings_type, 'vm')
+        self.assertEqual(job_settings[0].lando_connection, first_lando_connection)
+
+        self.assertEqual(job_settings[1].name, 'settings2')
+        self.assertEqual(job_settings[1].settings_type, 'vm')
+        self.assertEqual(job_settings[1].lando_connection, first_lando_connection)
+
+        vm_commands = VMCommand.objects.order_by('image_name')
+        self.assertEqual(len(vm_commands), 2)
+        self.assertEqual(vm_commands[0].job_settings.name, 'settings1')
+        self.assertEqual(vm_commands[0].image_name, 'myimage1')
+        self.assertEqual(vm_commands[0].cloud_settings.name, 'mycloud')
+        self.assertEqual(vm_commands[0].cwl_base_command, json.dumps(['cwltool']))
+        self.assertEqual(vm_commands[0].cwl_post_process_command, json.dumps(['cleanup']))
+        self.assertEqual(vm_commands[0].cwl_pre_process_command, json.dumps(['prep']))
+
+        self.assertEqual(vm_commands[1].job_settings.name, 'settings2')
+        self.assertEqual(vm_commands[1].image_name, 'myimage2')
+        self.assertEqual(vm_commands[1].cloud_settings.name, 'mycloud')
+        self.assertEqual(vm_commands[1].cwl_base_command, json.dumps(['cwltool2']))
+        self.assertEqual(vm_commands[1].cwl_post_process_command, json.dumps(['cleanup2']))
+        self.assertEqual(vm_commands[1].cwl_pre_process_command, json.dumps(['prep2']))
