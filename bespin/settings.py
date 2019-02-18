@@ -29,7 +29,7 @@ ALLOWED_HOSTS = []
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'bespin_api2',
+        'NAME': 'bespin_api',
         'USER': 'postgres',
         'PASSWORD': '',
         'HOST': 'localhost',

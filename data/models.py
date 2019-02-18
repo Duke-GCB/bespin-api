@@ -104,13 +104,14 @@ class JobFlavor(models.Model):
     Specifies CPU/RAM requested of a cloud resource.
     For a VM we use the name field. For K8s container we use cpus and memory.
     The cpus field is also used for the VM job resource utilization calculation.
+    For memory field see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory.
     """
     name = models.CharField(max_length=255, unique=True,
                             help_text="The name of the flavor to use when launching instances (specifies CPU/RAM)")
     cpus = models.IntegerField(default=1,
                                help_text="How many CPUs are assigned to this flavor")
     memory = models.CharField(default='1Gi', max_length=12,
-                                 help_text="How much memory in GiB is assigned to this flavor")
+                              help_text="How much memory in k8s units to be use when running a job with this flavor")
 
     def __str__(self):
         return "JobFlavor - pk: {} name: '{}' cpus: {}".format(self.pk, self.name, self.cpus,)
