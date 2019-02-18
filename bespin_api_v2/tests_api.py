@@ -3,7 +3,7 @@ from django.core.urlresolvers import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
-from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, VMStrategy, ShareGroup, JobFlavor, \
+from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
     JobSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -176,7 +176,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         vm_project = VMProject.objects.create()
         job_settings = JobSettings.objects.create()
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
+        self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
 
     def test_list_fails_unauthenticated(self):
@@ -196,7 +196,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A":"B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_admin_user()
@@ -208,7 +208,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.data[0]['tag'], 'b37xGen')
         self.assertEqual(response.data[0]['workflow'], self.workflow.id)
         self.assertEqual(response.data[0]['system_job_order'], {"A": "B"})
-        self.assertEqual(response.data[0]['default_vm_strategy'], self.vm_strategy.id)
+        self.assertEqual(response.data[0]['default_vm_strategy'], self.job_strategy.id)
         self.assertEqual(response.data[0]['share_group'], self.share_group.id)
 
     def test_retrieve_with_admin_user(self):
@@ -216,7 +216,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A": "B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_admin_user()
@@ -227,7 +227,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.data['tag'], 'b37xGen')
         self.assertEqual(response.data['workflow'], self.workflow.id)
         self.assertEqual(response.data['system_job_order'], {"A": "B"})
-        self.assertEqual(response.data['default_vm_strategy'], self.vm_strategy.id)
+        self.assertEqual(response.data['default_vm_strategy'], self.job_strategy.id)
         self.assertEqual(response.data['share_group'], self.share_group.id)
 
     def test_create_with_admin_user(self):
@@ -237,14 +237,14 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
             'workflow': self.workflow.id,
             'tag': 'b37xGen',
             'system_job_order': {"A": "B"},
-            'default_vm_strategy': self.vm_strategy.id,
+            'default_vm_strategy': self.job_strategy.id,
             'share_group': self.share_group.id,
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['tag'], 'b37xGen')
         self.assertEqual(response.data['workflow'], self.workflow.id)
         self.assertEqual(response.data['system_job_order'], {"A": "B"})
-        self.assertEqual(response.data['default_vm_strategy'], self.vm_strategy.id)
+        self.assertEqual(response.data['default_vm_strategy'], self.job_strategy.id)
         self.assertEqual(response.data['share_group'], self.share_group.id)
 
     def test_put_fails_with_admin_user(self):
@@ -273,21 +273,21 @@ class VMStrategyViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_list_normal_user(self):
-        self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=self.job_flavor,
+        self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=self.job_flavor,
                                                      job_settings=self.job_settings)
         self.user_login.become_normal_user()
         url = reverse('v2-vmstrategies-list')
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], self.vm_strategy.id)
+        self.assertEqual(response.data[0]['id'], self.job_strategy.id)
         self.assertEqual(response.data[0]['name'], 'default')
         self.assertEqual(response.data[0]['vm_flavor']['name'], 'large')
         self.assertEqual(response.data[0]['vm_settings'], self.job_settings.id)
 
     def test_list_filtering(self):
-        VMStrategy.objects.create(name='default', job_flavor=self.job_flavor, job_settings=self.job_settings)
-        VMStrategy.objects.create(name='better', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        JobStrategy.objects.create(name='default', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        JobStrategy.objects.create(name='better', job_flavor=self.job_flavor, job_settings=self.job_settings)
         self.user_login.become_normal_user()
         url = reverse('v2-vmstrategies-list')
         response = self.client.get(url, format='json')
@@ -301,13 +301,13 @@ class VMStrategyViewSetTestCase(APITestCase):
         self.assertEqual(set([item['name'] for item in response.data]), set(['better']))
 
     def test_retrieve_with_normal_user(self):
-        self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=self.job_flavor,
+        self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=self.job_flavor,
                                                      job_settings=self.job_settings)
         self.user_login.become_normal_user()
-        url = reverse('v2-vmstrategies-list') + str(self.vm_strategy.id) + '/'
+        url = reverse('v2-vmstrategies-list') + str(self.job_strategy.id) + '/'
         response = self.client.get(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], self.vm_strategy.id)
+        self.assertEqual(response.data['id'], self.job_strategy.id)
         self.assertEqual(response.data['name'], 'default')
         self.assertEqual(response.data['vm_flavor']['id'], self.job_flavor.id)
         self.assertEqual(response.data['vm_settings'], self.job_settings.id)
@@ -353,7 +353,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         job_flavor = JobFlavor.objects.create(name='large')
         job_settings = JobSettings.objects.create()
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
+        self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
         self.endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret',
                                                    api_root='https://someserver.com/api')
@@ -369,7 +369,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A": "B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_normal_user()
@@ -380,7 +380,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.data[0]['tag'], 'b37xGen')
         self.assertEqual(response.data[0]['workflow'], self.workflow.id)
         self.assertEqual(response.data[0]['system_job_order'], {"A": "B"})
-        self.assertEqual(response.data[0]['default_vm_strategy'], self.vm_strategy.id)
+        self.assertEqual(response.data[0]['default_vm_strategy'], self.job_strategy.id)
         self.assertEqual(response.data[0]['share_group'], self.share_group.id)
 
     def test_list_normal_user_with_workflow_tag_filtering(self):
@@ -388,14 +388,14 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A": "B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         workflow_configuration2 = WorkflowConfiguration.objects.create(
             tag='b37other',
             workflow=self.workflow2,
             system_job_order={"A": "C"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_normal_user()
@@ -413,14 +413,14 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A": "B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         workflow_configuration2 = WorkflowConfiguration.objects.create(
             tag='b37other',
             workflow=self.workflow2,
             system_job_order={"A": "C"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_normal_user()
@@ -438,7 +438,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"items": 4},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
         self.user_login.become_normal_user()
@@ -449,7 +449,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.data['tag'], 'b37xGen')
         self.assertEqual(response.data['workflow'], self.workflow.id)
         self.assertEqual(response.data['system_job_order'], {"items": 4})
-        self.assertEqual(response.data['default_vm_strategy'], self.vm_strategy.id)
+        self.assertEqual(response.data['default_vm_strategy'], self.job_strategy.id)
         self.assertEqual(response.data['share_group'], self.share_group.id)
 
     def test_create_with_admin_user(self):
@@ -493,7 +493,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
         vm_project = VMProject.objects.create()
         job_settings = JobSettings.objects.create()
 
-        self.vm_strategy = VMStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
+        self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
         self.endpoint = DDSEndpoint.objects.create(name='DukeDS', agent_key='secret',
                                                    api_root='https://someserver.com/api')
@@ -501,7 +501,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
             tag='b37xGen',
             workflow=self.workflow,
             system_job_order={"A": "B"},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group,
         )
 
@@ -616,7 +616,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
             'stage_group': stage_group.id,
             'job_order': {'threads': 12, 'items': 'pie'},
             'share_group': self.share_group.id,
-            'job_vm_strategy': self.vm_strategy.id,
+            'job_vm_strategy': self.job_strategy.id,
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'My Job')

@@ -114,21 +114,21 @@ class JobTemplate(object):
                 return [self.create_placeholder_value(type_value['items'])]
         raise ValueError("Unknown type {}".format(type_value))
 
-    def get_vm_strategy(self, workflow_configuration):
+    def get_job_strategy(self, workflow_configuration):
         if self.job_vm_strategy:
             return self.job_vm_strategy
         else:
-            return workflow_configuration.default_vm_strategy
+            return workflow_configuration.default_job_strategy
 
     def create_job_factory(self, user):
         workflow_version_configuration = WorkflowVersionConfiguration(self.tag)
         workflow_configuration = workflow_version_configuration.workflow_configuration
         system_job_order = workflow_configuration.system_job_order
-        vm_strategy = self.get_vm_strategy(workflow_configuration)
+        job_strategy = self.get_job_strategy(workflow_configuration)
         return JobFactory(user, workflow_version_configuration.workflow_version,
                           self.name, self.fund_code, self.stage_group,
                           system_job_order, self.job_order,
-                          vm_strategy, workflow_configuration.share_group)
+                          job_strategy, workflow_configuration.share_group)
 
     def create_and_populate_job(self, user):
         job_factory = self.create_job_factory(user)

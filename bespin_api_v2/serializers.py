@@ -1,7 +1,7 @@
 import json
 from rest_framework import serializers, fields
 from django.contrib.auth.models import User
-from data.models import Workflow, WorkflowVersion, VMStrategy, WorkflowConfiguration, JobFileStageGroup, VMStrategy, \
+from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -40,10 +40,11 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
 
 
 class WorkflowConfigurationSerializer(serializers.ModelSerializer):
+    default_vm_strategy = serializers.IntegerField(source='default_job_strategy_id')
     class Meta:
         model = WorkflowConfiguration
         resource_name = 'workflow-configuration'
-        fields = '__all__'
+        fields = ('id', 'tag', 'workflow', 'system_job_order', 'default_vm_strategy', 'share_group', )
 
 
 class VMFlavorSerializer(serializers.ModelSerializer):
@@ -57,10 +58,13 @@ class VMFlavorSerializer(serializers.ModelSerializer):
 
 
 class VMStrategySerializer(serializers.ModelSerializer):
+    """
+    Serializes new JobStrategy model into old VMStrategy format to maintain original vm-strategies api
+    """
     vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     vm_settings = serializers.IntegerField(source='job_settings_id')
     class Meta:
-        model = VMStrategy
+        model = JobStrategy
         resource_name = 'vm-strategies'
         fields = ['id', 'name', 'vm_settings', 'vm_flavor', 'volume_size_base', 'volume_size_factor', 'volume_mounts']
 
@@ -88,7 +92,7 @@ class JobTemplateValidatingSerializer(JobTemplateMinimalSerializer):
 class JobTemplateSerializer(JobTemplateValidatingSerializer):
     stage_group = serializers.PrimaryKeyRelatedField(queryset=JobFileStageGroup.objects.all())
     job_vm_strategy = serializers.PrimaryKeyRelatedField(
-        queryset=VMStrategy.objects.all(), required=False)
+        queryset=JobStrategy.objects.all(), required=False)
     job = serializers.PrimaryKeyRelatedField(required=False, read_only=True)
 
 

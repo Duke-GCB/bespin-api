@@ -9,7 +9,7 @@ from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
 from data.models import JobActivity
-from data.models import VMStrategy, WorkflowConfiguration
+from data.models import JobStrategy, WorkflowConfiguration
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -967,7 +967,7 @@ class WorkflowConfigurationTestCase(TestCase):
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         vm_project = VMProject.objects.create(name='project1')
         self.job_settings = JobSettings.objects.create()
-        self.vm_strategy = VMStrategy.objects.create(
+        self.job_strategy = JobStrategy.objects.create(
             name='default',
             job_settings=self.job_settings,
             job_flavor=self.job_flavor
@@ -978,21 +978,21 @@ class WorkflowConfigurationTestCase(TestCase):
             tag='human',
             workflow=self.workflow,
             system_job_order={},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group
         )
         WorkflowConfiguration.objects.create(
             tag='rat',
             workflow=self.workflow,
             system_job_order={},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group
         )
         WorkflowConfiguration.objects.create(
             tag='human',
             workflow=self.workflow2,
             system_job_order={},
-            default_vm_strategy=self.vm_strategy,
+            default_job_strategy=self.job_strategy,
             share_group=self.share_group
         )
         with self.assertRaises(IntegrityError):
@@ -1000,6 +1000,6 @@ class WorkflowConfigurationTestCase(TestCase):
                 tag='human',
                 workflow=self.workflow,
                 system_job_order={},
-                default_vm_strategy=self.vm_strategy,
+                default_job_strategy=self.job_strategy,
                 share_group=self.share_group
             )

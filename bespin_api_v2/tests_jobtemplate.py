@@ -153,14 +153,14 @@ class JobTemplateTestCase(TestCase):
         with self.assertRaises(ValueError):
             job_template.create_placeholder_value({'type': 'unknown'})  # dictionary with non-array type
 
-    def test_get_vm_strategy(self):
-        mock_workflow_configuration = Mock(default_vm_strategy='good')
+    def test_get_job_strategy(self):
+        mock_workflow_configuration = Mock(default_job_strategy='good')
         job_order_data = JobTemplate(tag=None, name=None, fund_code=None, stage_group=None, job_order=None,
                                      job_vm_strategy=None)
-        self.assertEqual(job_order_data.get_vm_strategy(mock_workflow_configuration), 'good')
+        self.assertEqual(job_order_data.get_job_strategy(mock_workflow_configuration), 'good')
         job_order_data = JobTemplate(tag=None, name=None, fund_code=None, stage_group=None, job_order=None,
                                      job_vm_strategy='special')
-        self.assertEqual(job_order_data.get_vm_strategy(mock_workflow_configuration), 'special')
+        self.assertEqual(job_order_data.get_job_strategy(mock_workflow_configuration), 'special')
 
     @patch('bespin_api_v2.jobtemplate.JobFactory')
     @patch('bespin_api_v2.jobtemplate.WorkflowVersionConfiguration')
@@ -172,7 +172,7 @@ class JobTemplateTestCase(TestCase):
         workflow_configuration = mock_workflow_version_configuration.return_value.workflow_configuration
         mock_job_factory.assert_called_with(None, workflow_version, None, None, None,
                                             workflow_configuration.system_job_order, None,
-                                            workflow_configuration.default_vm_strategy,
+                                            workflow_configuration.default_job_strategy,
                                             workflow_configuration.share_group)
 
     @patch('bespin_api_v2.jobtemplate.JobFactory')

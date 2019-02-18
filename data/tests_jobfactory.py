@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from unittest.mock import MagicMock, patch, Mock
 from data.models import DDSEndpoint, DDSUserCredential, Workflow, WorkflowVersion, JobFileStageGroup, ShareGroup, \
     DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, JobSettings, CloudSettings, Job
-from data.jobfactory import JobFactory, JobFactoryException, JobVMStrategy, calculate_stage_group_size, \
+from data.jobfactory import JobFactory, JobFactoryException, CloudStrategy, calculate_stage_group_size, \
     calculate_volume_size
 import json
 
@@ -27,22 +27,23 @@ class JobFactoryTests(TestCase):
         self.stage_group = JobFileStageGroup.objects.create(user=self.user)
         self.share_group = ShareGroup.objects.create(name='result data checkers')
         vm_project = VMProject.objects.create(name='project1')
+
         self.job_settings = JobSettings.objects.create(name='settings1')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         self.volume_mounts = json.dumps({'/dev/vdb1': '/work'})
-        self.job_vm_strategy = JobVMStrategy(self.job_settings, self.job_flavor,
+        self.cloud_strategy = CloudStrategy(self.job_settings, self.job_flavor,
                                              volume_size_base=10, volume_size_factor=0,
                                              volume_mounts=self.volume_mounts)
 
     def test_creates_job_with_empty_job_order_data(self):
         user_job_order = {}
         system_job_order = {}
-        self.job_vm_strategy.volume_size_factor = 0
-        self.job_vm_strategy.volume_size_base = 150
+        self.cloud_strategy.volume_size_factor = 0
+        self.cloud_strategy.volume_size_base = 150
         job_factory = JobFactory(user=self.user, workflow_version=self.workflow_version,
                                  job_name='Test Job', fund_code='123-4', stage_group=self.stage_group,
                                  system_job_order=system_job_order, user_job_order=user_job_order,
-                                 job_vm_strategy=self.job_vm_strategy, share_group=self.share_group)
+                                 cloud_strategy=self.cloud_strategy, share_group=self.share_group)
         job = job_factory.create_job()
         self.assertEqual(json.loads(job.job_order), {})
 
@@ -50,12 +51,12 @@ class JobFactoryTests(TestCase):
     def test_creates_job(self):
         user_job_order = {'input1': 'user'}
         system_job_order = {'input2': 'system'}
-        self.job_vm_strategy.volume_size_factor = 0
-        self.job_vm_strategy.volume_size_base = 110
+        self.cloud_strategy.volume_size_factor = 0
+        self.cloud_strategy.volume_size_base = 110
         job_factory = JobFactory(user=self.user, workflow_version=self.workflow_version,
                                  job_name='Test Job', fund_code='123-4', stage_group=self.stage_group,
                                  system_job_order=system_job_order, user_job_order=user_job_order,
-                                 job_vm_strategy=self.job_vm_strategy, share_group=self.share_group)
+                                 cloud_strategy=self.cloud_strategy, share_group=self.share_group)
         job = job_factory.create_job()
         self.assertEqual(job.user, self.user)
         self.assertEqual(job.workflow_version, self.workflow_version)
@@ -75,12 +76,12 @@ class JobFactoryTests(TestCase):
     def test_creates_job_is_authorized(self):
         user_job_order = {'input1': 'user'}
         system_job_order = {'input2': 'system'}
-        self.job_vm_strategy.volume_size_factor = 0
-        self.job_vm_strategy.volume_size_base = 110
+        self.cloud_strategy.volume_size_factor = 0
+        self.cloud_strategy.volume_size_base = 110
         job_factory = JobFactory(user=self.user, workflow_version=self.workflow_version,
                                  job_name='Test Job', fund_code='123-4', stage_group=self.stage_group,
                                  system_job_order=system_job_order, user_job_order=user_job_order,
-                                 job_vm_strategy=self.job_vm_strategy, share_group=self.share_group)
+                                 cloud_strategy=self.cloud_strategy, share_group=self.share_group)
         job = job_factory.create_job()
         self.assertEqual(job.user, self.user)
         self.assertEqual(job.workflow_version, self.workflow_version)
@@ -89,12 +90,12 @@ class JobFactoryTests(TestCase):
     def test_favors_user_inputs(self):
         user_job_order = {'input1': 'user'}
         system_job_order = {'input1': 'system'}
-        self.job_vm_strategy.volume_size_factor = 0
-        self.job_vm_strategy.volume_size_base = 120
+        self.cloud_strategy.volume_size_factor = 0
+        self.cloud_strategy.volume_size_base = 120
         job_factory = JobFactory(user=self.user, workflow_version=self.workflow_version,
                                  job_name='Test Job', fund_code='123-4', stage_group=self.stage_group,
                                  system_job_order=system_job_order, user_job_order=user_job_order,
-                                 job_vm_strategy=self.job_vm_strategy, share_group=self.share_group)
+                                 cloud_strategy=self.cloud_strategy, share_group=self.share_group)
         job = job_factory.create_job()
         expected_job_order = json.dumps({'input1':'user'})
         self.assertEqual(expected_job_order, job.job_order)
