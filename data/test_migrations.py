@@ -132,6 +132,7 @@ class JSONFieldMigrationTestCase(TestMigrations):
         VMProject = apps.get_model('data', 'VMProject')
         VMStrategy = apps.get_model('data', 'VMStrategy')
         WorkflowConfiguration = apps.get_model('data', 'WorkflowConfiguration')
+        LandoConnection = apps.get_model('data','LandoConnection')
 
         # create data using these models
         workflow = Workflow.objects.create(name='Copy Files', tag='copyfiles')
@@ -177,6 +178,8 @@ class JSONFieldMigrationTestCase(TestMigrations):
             system_job_order_json='',
             default_vm_strategy=vm_strategy,
             share_group=share_group)
+        # create lando connection that is needed by future migrations run during tearDown
+        LandoConnection.objects.create(host='somehost', username='someuser', password='somepass', queue_name='somequeue')
 
     def test_migrates_workflow_version_fields(self):
         WorkflowVersion = self.apps.get_model('data', 'WorkflowVersion')
@@ -195,8 +198,8 @@ class JSONFieldMigrationTestCase(TestMigrations):
 
 
 class VMCommandMigrationTestCase(TestMigrations):
-    migrate_from = '0082_merge_20190215_2124'
-    migrate_to = '0095_auto_20190219_1447'
+    migrate_from = '0083_new_models_for_k8s'
+    migrate_to = '0085_cleanup_moved_vm_fields'
     django_application = 'data'
 
     def setUpBeforeMigration(self, apps):
@@ -247,12 +250,12 @@ class VMCommandMigrationTestCase(TestMigrations):
         self.assertEqual(job_settings[0].name, 'settings1')
         self.assertEqual(job_settings[0].lando_connection, first_lando_connection)
         self.assertEqual(job_settings[0].lando_connection.cluster_type, 'vm')
-        self.assertEqual(job_settings[1].vm_command.image_name, 'image1')
+        self.assertEqual(job_settings[0].vm_command.image_name, 'myimage1')
 
         self.assertEqual(job_settings[1].name, 'settings2')
         self.assertEqual(job_settings[1].lando_connection, first_lando_connection)
         self.assertEqual(job_settings[1].lando_connection.cluster_type, 'vm')
-        self.assertEqual(job_settings[1].vm_command.image_name, 'image2')
+        self.assertEqual(job_settings[1].vm_command.image_name, 'myimage2')
 
         vm_commands = VMCommand.objects.order_by('image_name')
         self.assertEqual(len(vm_commands), 2)

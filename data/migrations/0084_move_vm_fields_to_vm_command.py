@@ -18,21 +18,22 @@ def populate_job_settings_lando_connection(apps, schema_editor):
 def populate_vm_command_from_job_settings(apps, schema_editor):
     JobSettings = apps.get_model("data", "JobSettings")
     VMCommand = apps.get_model("data", "VMCommand")
-    for obj in JobSettings.objects.all():
-        VMCommand.objects.create(
-            job_settings=obj,
-            cloud_settings=obj.cloud_settings,
-            image_name=obj.image_name,
-            cwl_base_command=obj.cwl_base_command,
-            cwl_post_process_command=obj.cwl_post_process_command,
-            cwl_pre_process_command=obj.cwl_pre_process_command,
+    for job_setting in JobSettings.objects.all():
+        vm_command = VMCommand.objects.create(
+            cloud_settings=job_setting.cloud_settings,
+            image_name=job_setting.image_name,
+            cwl_base_command=job_setting.cwl_base_command,
+            cwl_post_process_command=job_setting.cwl_post_process_command,
+            cwl_pre_process_command=job_setting.cwl_pre_process_command,
         )
+        job_setting.vm_command = vm_command
+        job_setting.save()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('data', '0083_auto_20190218_1434'),
+        ('data', '0083_new_models_for_k8s'),
     ]
 
     operations = [

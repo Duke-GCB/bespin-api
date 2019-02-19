@@ -33,9 +33,19 @@ class Migration(migrations.Migration):
             model_name='jobsettings',
             name='image_name',
         ),
+        migrations.RenameModel(
+            old_name='VMStrategy',
+            new_name='JobStrategy',
+        ),
+        migrations.RenameField(
+            model_name='workflowconfiguration',
+            old_name='default_vm_strategy',
+            new_name='default_job_strategy',
+        ),
         migrations.AlterField(
-            model_name='vmcommand',
-            name='job_settings',
-            field=models.OneToOneField(help_text='job settings', on_delete=django.db.models.deletion.CASCADE, related_name='vm_command', to='data.JobSettings'),
+            model_name='jobsettings',
+            name='lando_connection',
+            field=models.ForeignKey(help_text='Lando connection to use for this job settings',
+                                    on_delete=django.db.models.deletion.CASCADE, to='data.LandoConnection'),
         ),
     ]
