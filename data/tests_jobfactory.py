@@ -7,6 +7,7 @@ from data.models import DDSEndpoint, DDSUserCredential, Workflow, WorkflowVersio
     DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, JobSettings, CloudSettings, Job
 from data.jobfactory import JobFactory, JobFactoryException, CloudStrategy, calculate_stage_group_size, \
     calculate_volume_size
+from data.tests_models import create_vm_job_settings
 import json
 
 
@@ -26,9 +27,8 @@ class JobFactoryTests(TestCase):
                                                                fields=[])
         self.stage_group = JobFileStageGroup.objects.create(user=self.user)
         self.share_group = ShareGroup.objects.create(name='result data checkers')
-        vm_project = VMProject.objects.create(name='project1')
 
-        self.job_settings = JobSettings.objects.create(name='settings1')
+        self.job_settings = create_vm_job_settings(name='settings1')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
         self.volume_mounts = json.dumps({'/dev/vdb1': '/work'})
         self.cloud_strategy = CloudStrategy(self.job_settings, self.job_flavor,

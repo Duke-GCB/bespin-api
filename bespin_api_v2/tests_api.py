@@ -4,7 +4,9 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
 from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
-    JobSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job
+    JobSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job, K8sCommandSet, \
+    LandoConnection
+from data.tests_models import create_vm_job_settings
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
 
@@ -174,7 +176,14 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         )
         job_flavor = JobFlavor.objects.create(name='large')
         vm_project = VMProject.objects.create()
-        job_settings = JobSettings.objects.create()
+        lando_connection = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost',
+            username='user1',
+            password='secret',
+            queue_name='lando'
+        )
+        job_settings = JobSettings.objects.create(lando_connection=lando_connection, k8s_command_set=K8sCommandSet.objects.create())
 
         self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
@@ -264,7 +273,7 @@ class JobStrategyViewSetTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
         self.job_flavor = JobFlavor.objects.create(name='large')
-        self.job_settings = JobSettings.objects.create()
+        self.job_settings = create_vm_job_settings()
 
     def test_list_fails_unauthenticated(self):
         self.user_login.become_unauthorized()
@@ -351,7 +360,7 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
             fields=[{"name":"threads", "type": "int"}],
         )
         job_flavor = JobFlavor.objects.create(name='large')
-        job_settings = JobSettings.objects.create()
+        job_settings = create_vm_job_settings()
 
         self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()
@@ -490,8 +499,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
         )
         job_flavor = JobFlavor.objects.create(name='large')
-        vm_project = VMProject.objects.create()
-        job_settings = JobSettings.objects.create()
+        job_settings = create_vm_job_settings()
 
         self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()

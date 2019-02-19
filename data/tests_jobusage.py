@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, JobFlavor, VMProject, CloudSettings, \
     JobSettings
+from data.tests_models import create_vm_job_settings
 import datetime
 from unittest.mock import Mock, patch
 from data.jobusage import JobUsage
@@ -20,8 +21,7 @@ class JobUsageTests(TestCase):
         self.sample_json = "{'type': 1}"
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        self.job_settings = JobSettings.objects.create()
+        self.job_settings = create_vm_job_settings()
         self.job = Job.objects.create(workflow_version=self.workflow_version,
                                       user=self.user,
                                       job_order=self.sample_json,

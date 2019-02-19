@@ -18,6 +18,34 @@ import json
 CWL_URL = 'https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl'
 
 
+def create_vm_lando_connection():
+    return LandoConnection.objects.create(
+        cluster_type=LandoConnection.VM_TYPE,
+        host='somehost', username='jpb67',
+        password='secret', queue_name='lando')
+
+
+def create_vm_command(vm_project=None, cloud_name='cloud'):
+    if not vm_project:
+        vm_project = VMProject.objects.create(name='project1')
+    cloud_settings = CloudSettings.objects.create(name=cloud_name, vm_project=vm_project)
+    return VMCommand.objects.create(
+        cloud_settings=cloud_settings,
+        image_name='someimage',
+        cwl_base_command='',
+        cwl_post_process_command='',
+        cwl_pre_process_command='',
+    )
+
+
+def create_vm_job_settings(name='default_settings', cloud_name='cloud', vm_project=None):
+    return JobSettings.objects.create(
+        name=name,
+        lando_connection=create_vm_lando_connection(),
+        vm_command=create_vm_command(vm_project=vm_project, cloud_name=cloud_name),
+    )
+
+
 class DDSEndpointTests(TestCase):
     # Not validating blank or null fields here, as it does not happen at the model layer
     # It is the responsibility of a form or serializer to do that.
@@ -144,8 +172,7 @@ class JobTests(TestCase):
         self.sample_json = "{'type': 1}"
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        self.job_settings = JobSettings.objects.create()
+        self.job_settings = create_vm_job_settings()
 
     def test_create(self):
         Job.objects.create(workflow_version=self.workflow_version, user=self.user,
@@ -237,9 +264,7 @@ class JobTests(TestCase):
         obj.sample_json = "{'type': 1}"
 
         job_flavor = JobFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        obj.job_settings = JobSettings.objects.create()
-
+        obj.job_settings = create_vm_job_settings()
         obj.job = Job.objects.create(workflow_version=obj.workflow_version, user=obj.user,
                                      job_order=obj.sample_json,
                                      share_group=share_group,
@@ -581,9 +606,7 @@ class JobQuestionnaireTests(TestCase):
 
     @staticmethod
     def add_vmsettings_fields(obj):
-        obj.vm_project = VMProject.objects.create(name='project')
-        obj.cloud_settings = CloudSettings.objects.create(name='cloud', vm_project=obj.vm_project)
-        obj.job_settings = JobSettings.objects.create(name='settings')
+        obj.job_settings = create_vm_job_settings()
         obj.job_flavor = JobFlavor.objects.create(name='flavor')
 
     @staticmethod
@@ -597,15 +620,14 @@ class JobQuestionnaireTests(TestCase):
                                                               fields=[])
         obj.flavor1 = JobFlavor.objects.create(name='flavor1')
         obj.flavor2 = JobFlavor.objects.create(name='flavor2')
-        obj.project = VMProject.objects.create(name='bespin-project')
 
     def setUp(self):
         self.add_workflowversion_fields(self)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.cloud = CloudSettings.objects.create(name='cloud',
-                                                  vm_project=self.project)
-        self.settings1 = JobSettings.objects.create(name='settings1')
-        self.settings2 = JobSettings.objects.create(name='settings2')
+        lando_connection = create_vm_lando_connection()
+        vm_command = create_vm_command()
+        self.settings1 = JobSettings.objects.create(name='settings1', lando_connection=lando_connection)
+        self.settings2 = JobSettings.objects.create(name='settings2', lando_connection=lando_connection)
         self.questionnaire_type = JobQuestionnaireType.objects.create(tag='human')
 
     def test_two_questionnaires(self):
@@ -892,18 +914,24 @@ class CloudSettingsTests(TestCase):
 
 
 class JobSettingsTests(TestCase):
+    def setUp(self):
+        self.lando_connection = create_vm_lando_connection()
+        self.vm_command =create_vm_command()
+
     def test_unique_names(self):
-        JobSettings.objects.create(name='settings1')
+        JobSettings.objects.create(name='settings1',
+                                   lando_connection=self.lando_connection,
+                                   vm_command=self.vm_command)
         with self.assertRaises(IntegrityError):
-            JobSettings.objects.create(name='settings1')
+            JobSettings.objects.create(name='settings1',
+                                       lando_connection=self.lando_connection,
+                                       vm_command=self.vm_command)
 
 
 class VMCommandTests(TestCase):
-
     def setUp(self):
         self.create_args = {
             'cloud_settings': CloudSettings.objects.create(name='cloud1', vm_project=VMProject.objects.create(name='project1')),
-            'job_settings': JobSettings.objects.create()
         }
 
     def test_creates_with_required_fks(self):
@@ -927,7 +955,6 @@ class VMCommandTests(TestCase):
         # other keys not required, should not fail validation
         self.assertNotIn('cwl_pre_process_command', error_dict)
         self.assertNotIn('cwl_post_process_command', error_dict)
-
 
 
 class JobQuestionnaireTypeTests(TestCase):
@@ -965,12 +992,11 @@ class WorkflowConfigurationTestCase(TestCase):
         self.workflow2 = Workflow.objects.create(name='exomeseq2', tag='exomseq2')
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        self.job_settings = JobSettings.objects.create()
+        self.job_settings = create_vm_job_settings()
         self.job_strategy = JobStrategy.objects.create(
             name='default',
             job_settings=self.job_settings,
-            job_flavor=self.job_flavor
+            job_flavor=self.job_flavor,
         )
 
     def test_workflow_and_tag_unique(self):

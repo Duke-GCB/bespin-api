@@ -196,7 +196,7 @@ class JSONFieldMigrationTestCase(TestMigrations):
 
 class VMCommandMigrationTestCase(TestMigrations):
     migrate_from = '0082_merge_20190215_2124'
-    migrate_to = '0085_auto_20190218_1453'
+    migrate_to = '0095_auto_20190219_1447'
     django_application = 'data'
 
     def setUpBeforeMigration(self, apps):
@@ -245,23 +245,23 @@ class VMCommandMigrationTestCase(TestMigrations):
         job_settings = JobSettings.objects.order_by('name')
         self.assertEqual(len(job_settings), 2)
         self.assertEqual(job_settings[0].name, 'settings1')
-        self.assertEqual(job_settings[0].settings_type, 'vm')
         self.assertEqual(job_settings[0].lando_connection, first_lando_connection)
+        self.assertEqual(job_settings[0].lando_connection.cluster_type, 'vm')
+        self.assertEqual(job_settings[1].vm_command.image_name, 'image1')
 
         self.assertEqual(job_settings[1].name, 'settings2')
-        self.assertEqual(job_settings[1].settings_type, 'vm')
         self.assertEqual(job_settings[1].lando_connection, first_lando_connection)
+        self.assertEqual(job_settings[1].lando_connection.cluster_type, 'vm')
+        self.assertEqual(job_settings[1].vm_command.image_name, 'image2')
 
         vm_commands = VMCommand.objects.order_by('image_name')
         self.assertEqual(len(vm_commands), 2)
-        self.assertEqual(vm_commands[0].job_settings.name, 'settings1')
         self.assertEqual(vm_commands[0].image_name, 'myimage1')
         self.assertEqual(vm_commands[0].cloud_settings.name, 'mycloud')
         self.assertEqual(vm_commands[0].cwl_base_command, json.dumps(['cwltool']))
         self.assertEqual(vm_commands[0].cwl_post_process_command, json.dumps(['cleanup']))
         self.assertEqual(vm_commands[0].cwl_pre_process_command, json.dumps(['prep']))
 
-        self.assertEqual(vm_commands[1].job_settings.name, 'settings2')
         self.assertEqual(vm_commands[1].image_name, 'myimage2')
         self.assertEqual(vm_commands[1].cloud_settings.name, 'mycloud')
         self.assertEqual(vm_commands[1].cwl_base_command, json.dumps(['cwltool2']))

@@ -148,38 +148,23 @@ class LandoConnection(models.Model):
     """
     Settings used to connect with lando to start, restart or cancel a job.
     """
+    VM_TYPE = 'vm'
+    K8S_TYPE = 'k8s'
+    TYPES = [
+        (VM_TYPE, 'VM Cluster Type'),
+        (K8S_TYPE, 'K8s Cluster Type'),
+    ]
+    cluster_type = models.CharField(max_length=255, choices=TYPES, default=VM_TYPE)
     host = models.CharField(max_length=255)
     username = models.CharField(max_length=255)
     password = models.CharField(max_length=255)
     queue_name = models.CharField(max_length=255)
 
     def __str__(self):
-        return "LandoConnection - pk: {} host: '{}'".format(self.pk, self.host,)
-
-
-class JobSettings(models.Model):
-    """
-    A collection of settings that specify details for VMs launched
-    """
-    VM_TYPE = 'vm'
-    K8S_TYPE = 'k8s'
-    TYPES = [
-        (VM_TYPE, 'VM Job Settings'),
-        (K8S_TYPE, 'K8s Job Settings'),
-    ]
-    name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
-    settings_type = models.TextField(choices=TYPES, default=VM_TYPE)
-    lando_connection = models.ForeignKey(LandoConnection, help_text='Lando connection to use for this job settings',
-                                         null=True)
-    def __str__(self):
-        return "JobSettings - pk: {} name: '{}' settings_type: '{}'".format(self.pk, self.name, self.settings_type)
-
-    class Meta:
-        verbose_name_plural = "Job Settings Collections"
+        return "LandoConnection - pk: {} host: '{}' cluster_type: {}".format(self.pk, self.host, self.cluster_type)
 
 
 class VMCommand(models.Model):
-    job_settings = models.OneToOneField(JobSettings, help_text='job settings', related_name='vm_command')
     cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
     image_name = models.CharField(max_length=255, help_text='Name of the VM Image to launch')
     cwl_base_command = models.TextField(help_text='JSON-encoded command array to run the  image\'s installed CWL engine')
@@ -188,8 +173,8 @@ class VMCommand(models.Model):
     cwl_pre_process_command = models.TextField(blank=True,
                                                 help_text='JSON-encoded command array to run before cwl_base_command')
     def __str__(self):
-        return "VMCommand - pk: {} settings name: '{}' image_name: '{}'".format(
-            self.pk, self.job_settings.name, self.image_name)
+        return "VMCommand - pk: {} image_name: '{}'".format(
+            self.pk, self.image_name)
 
 
 class K8sStepCommand(models.Model):
@@ -210,21 +195,50 @@ class K8sStepCommand(models.Model):
     ]
     step_type = models.TextField(choices=STEP_TYPES)
     image_name = models.CharField(max_length=255, help_text='Name of the image to run for this step')
-    cpu = models.IntegerField(help_text='Number of cpu to request when running this step')
+    cpus = models.IntegerField(help_text='Number of cpus to request when running this step command')
     memory = models.CharField(max_length=255, help_text='Memory in k8s units to request when running this step')
     base_command = JSONField(help_text='JSON array with base command to run')
 
     def __str__(self):
-        return "K8sStepCommand - pk: {} step_type: '{}' image_name: '{}' base_command: '{}'".format(
-            self.pk, self.step_type, self.image_name, self.base_command)
+        return "K8sStepCommand - pk: {} step_type: '{}' image_name: '{}' base_command: '{}' cpus: {} memory:{}".format(
+            self.pk, self.step_type, self.image_name, self.base_command, self.cpus, self.memory)
 
 
 class K8sCommandSet(models.Model):
-    job_settings = models.ForeignKey(JobSettings, help_text='job settings', related_name='k8s_command_set')
     step_commands = models.ManyToManyField(K8sStepCommand, help_text="Steps to be used by this set")
 
     def __str__(self):
-        return "K8sCommandSet - pk: {} job_settings.name: '{}'".format(self.pk, self.job_settings.name)
+        return "K8sCommandSet - pk: {}".format(self.pk)
+
+
+class JobSettings(models.Model):
+    """
+    A collection of settings that specify details for VMs launched
+    """
+    name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
+    lando_connection = models.ForeignKey(LandoConnection, help_text='Lando connection to use for this job settings')
+    vm_command = models.ForeignKey(VMCommand, help_text='VM command to use for type vm', null=True, blank=True)
+    k8s_command_set = models.ForeignKey(K8sCommandSet, help_text='K8s command set to use for type k8s', null=True, blank=True)
+
+    def clean(self):
+        cluster_type = self.lando_connection.cluster_type
+        if cluster_type == LandoConnection.VM_TYPE:
+            if self.vm_command is None:
+                raise ValidationError("vm_command must be filled in when using a lando_connection with VM cluster type")
+            if self.k8s_command_set:
+                raise ValidationError("k8s_command_set must be null when using a lando_connection with VM cluster type")
+        elif cluster_type == LandoConnection.K8S_TYPE:
+            if self.k8s_command_set is None:
+                raise ValidationError("k8s_command_set must be filled in when using a lando_connection with k8s cluster type")
+            if self.vm_command:
+                raise ValidationError("vm_command must be null when using a lando_connection with k8s cluster type")
+
+    def __str__(self):
+        return "JobSettings - pk: {} name: '{}' cluster_type: '{}'".format(self.pk, self.name,
+                                                                           self.lando_connection.cluster_type)
+
+    class Meta:
+        verbose_name_plural = "Job Settings Collections"
 
 
 class Job(models.Model):
