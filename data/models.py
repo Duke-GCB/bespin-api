@@ -193,7 +193,7 @@ class K8sStepCommand(models.Model):
         (SAVE_OUTPUT_STEP, 'Save Output'),
         (RECORD_OUTPUT_PROJECT, "Record Output Project"),
     ]
-    step_type = models.TextField(choices=STEP_TYPES)
+    step_type = models.CharField(max_length=255, choices=STEP_TYPES)
     image_name = models.CharField(max_length=255, help_text='Name of the image to run for this step')
     cpus = models.IntegerField(help_text='Number of cpus to request when running this step command')
     memory = models.CharField(max_length=255, help_text='Memory in k8s units to request when running this step')
@@ -588,7 +588,7 @@ class JobStrategy(models.Model):
                                      help_text='JSON-encoded dictionary of volume mounts, e.g. {"/dev/vdb1": "/work"}')
 
     class Meta:
-        verbose_name_plural = "VM Strategies"
+        verbose_name_plural = "Job Strategies"
 
     def __str__(self):
         return "JobStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(

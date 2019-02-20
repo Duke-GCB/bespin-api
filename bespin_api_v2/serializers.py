@@ -3,7 +3,7 @@ from rest_framework import serializers, fields, permissions, viewsets
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
-    WorkflowMethodsDocument, JobSettings, LandoConnection, VMCommand, K8sStepCommand, K8sCommandSet
+    WorkflowMethodsDocument, JobSettings, LandoConnection, VMCommand, K8sStepCommand
 from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -123,24 +123,21 @@ class AdminJobSettingsSerializer(serializers.ModelSerializer):
     k8s_step_commands = serializers.SerializerMethodField()
 
     def get_k8s_step_commands(self, obj):
-        try:
-            step_dict = {}
-            command_set = obj.k8s_command_set.get()
-            for step in command_set.step_commands.all():
+        step_dict = {}
+        if obj.k8s_command_set:
+            for step in obj.k8s_command_set.step_commands.all():
                 step_dict[step.step_type] = {
                     'image_name': step.image_name,
-                    'cpu': step.cpu,
+                    'cpus': step.cpus,
                     'memory': step.memory,
                     'base_command': step.base_command,
                 }
-            return step_dict
-        except K8sCommandSet.DoesNotExist:
-            return None
+        return step_dict
 
     class Meta:
         model = JobSettings
         resource_name = 'job-settings'
-        fields = ('settings_type', 'vm_command', 'k8s_step_commands')
+        fields = ('vm_command', 'k8s_step_commands')
 
 
 class AdminJobSerializer(serializers.ModelSerializer):
