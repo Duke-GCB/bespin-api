@@ -83,7 +83,7 @@ class JobMailer(object):
 
     def _deliver(self, message):
         if self.queue_messages:
-            client = MailerClient()
+            client = MailerClient(self.job.id)
             client.send(message.id)
         else:
             sender = EmailMessageSender(message)
