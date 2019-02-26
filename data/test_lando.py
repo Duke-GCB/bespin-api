@@ -1,5 +1,5 @@
 from django.test import TestCase
-from data.lando import LandoJob
+from data.lando import LandoJob, LandoConfig
 from data.models import LandoConnection, Workflow, WorkflowVersion, Job, JobFileStageGroup, \
     DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, JobSettings, CloudSettingsOpenStack
 from data.tests_models import create_vm_job_settings
@@ -105,3 +105,12 @@ class LandoJobTests(TestCase):
         job = LandoJob(self.job.id, self.user)
         with self.assertRaises(ValidationError) as raised_error:
             job.restart()
+
+
+class LandoConfigTestCase(TestCase):
+    @patch('data.lando.LandoConnection', autospec=True)
+    def test_constructor(self, mock_lando_connection):
+        mailer_config = LandoConfig(job_id=23)
+
+        self.assertEqual(mailer_config.work_queue_config, mock_lando_connection.get_for_job_id.return_value)
+        mock_lando_connection.get_for_job_id.assert_called_with(23)

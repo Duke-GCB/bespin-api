@@ -16,7 +16,7 @@ class LandoConfig(object):
     Settings for the AMQP queue we send messages to lando server over.
     """
     def __init__(self, job_id):
-        self.work_queue_config = Job.objects.get(pk=job_id).job_settings.lando_connection
+        self.work_queue_config = LandoConnection.get_for_job_id(job_id)
 
 
 class LandoJob(object):

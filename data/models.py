@@ -160,6 +160,11 @@ class LandoConnection(models.Model):
     password = models.CharField(max_length=255)
     queue_name = models.CharField(max_length=255)
 
+    @staticmethod
+    def get_for_job_id(job_id):
+        job = Job.objects.get(pk=job_id)
+        return job.job_settings.lando_connection
+
     def __str__(self):
         return "LandoConnection - pk: {} host: '{}' cluster_type: {}".format(self.pk, self.host, self.cluster_type)
 

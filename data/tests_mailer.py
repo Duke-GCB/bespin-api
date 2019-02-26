@@ -223,13 +223,12 @@ class JobMailerTestCase(TestCase):
 
 
 class MailerConfigTestCase(TestCase):
-    @patch('data.mailer.Job', autospec=True)
-    def test_constructor(self, mock_job):
+    @patch('data.mailer.LandoConnection', autospec=True)
+    def test_constructor(self, mock_lando_connection):
         mailer_config = MailerConfig(job_id=23)
 
-        expected_lando_connection = mock_job.objects.get.return_value.job_settings.lando_connection
-        self.assertEqual(mailer_config.work_queue_config, expected_lando_connection)
-        mock_job.objects.get.assert_called_with(pk=23)
+        self.assertEqual(mailer_config.work_queue_config, mock_lando_connection.get_for_job_id.return_value)
+        mock_lando_connection.get_for_job_id.assert_called_with(23)
 
 
 class MailerClientTestCase(TestCase):
