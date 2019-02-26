@@ -14,7 +14,6 @@ class LandoJobTests(TestCase):
         endpoint = DDSEndpoint.objects.create(name='app1', agent_key='abc123')
         user_credentials = DDSUserCredential.objects.create(user=self.user, token='abc123', endpoint=endpoint,
                                                             dds_id='5432')
-        LandoConnection.objects.create(host='127.0.0.1', username='jpb67', password='secret', queue_name='lando')
         self.workflow = Workflow.objects.create(name='RnaSeq')
         workflow_version = WorkflowVersion.objects.create(workflow=self.workflow,
                                                           object_name='#main',
@@ -43,6 +42,10 @@ class LandoJobTests(TestCase):
                                        file_id='5322',
                                        dds_user_credentials=user_credentials,
                                        destination_path='sample2.fasta')
+
+    def test_constructor(self):
+        job = LandoJob(self.job.id, self.user)
+        self.assertEqual(job.config.work_queue_config, self.job_settings.lando_connection)
 
     @patch('data.lando.LandoJob._make_client')
     @patch('data.lando.give_download_permissions')
