@@ -4,7 +4,7 @@ from data.models import Workflow, WorkflowVersion
 from data.models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, JobError
 from data.models import LandoConnection
 from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, \
-    CloudSettings, VMCommand
+    CloudSettingsOpenStack, JobRuntimeOpenStack
 from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
@@ -25,11 +25,11 @@ def create_vm_lando_connection():
         password='secret', queue_name='lando')
 
 
-def create_vm_command(vm_project=None, cloud_name='cloud'):
+def create_vm_job_runtime(vm_project=None, cloud_name='cloud'):
     if not vm_project:
         vm_project = VMProject.objects.create(name='project1')
-    cloud_settings = CloudSettings.objects.create(name=cloud_name, vm_project=vm_project)
-    return VMCommand.objects.create(
+    cloud_settings = CloudSettingsOpenStack.objects.create(name=cloud_name, vm_project=vm_project)
+    return JobRuntimeOpenStack.objects.create(
         cloud_settings=cloud_settings,
         image_name='someimage',
         cwl_base_command='',
@@ -42,7 +42,7 @@ def create_vm_job_settings(name='default_settings', cloud_name='cloud', vm_proje
     return JobSettings.objects.create(
         name=name,
         lando_connection=create_vm_lando_connection(),
-        vm_command=create_vm_command(vm_project=vm_project, cloud_name=cloud_name),
+        job_runtime_openstack=create_vm_job_runtime(vm_project=vm_project, cloud_name=cloud_name),
     )
 
 
@@ -625,7 +625,7 @@ class JobQuestionnaireTests(TestCase):
         self.add_workflowversion_fields(self)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         lando_connection = create_vm_lando_connection()
-        vm_command = create_vm_command()
+        vm_job_runtime = create_vm_job_runtime()
         self.settings1 = JobSettings.objects.create(name='settings1', lando_connection=lando_connection)
         self.settings2 = JobSettings.objects.create(name='settings2', lando_connection=lando_connection)
         self.questionnaire_type = JobQuestionnaireType.objects.create(tag='human')
@@ -887,17 +887,17 @@ class CloudSettingsTests(TestCase):
 
     def test_unique_names(self):
         self.create_args['name'] = 'cloud1'
-        CloudSettings.objects.create(**self.create_args)
+        CloudSettingsOpenStack.objects.create(**self.create_args)
         with self.assertRaises(IntegrityError):
-            CloudSettings.objects.create(**self.create_args)
+            CloudSettingsOpenStack.objects.create(**self.create_args)
 
     def test_requires_vm_project(self):
         del self.create_args['vm_project']
         with self.assertRaises(IntegrityError) as val:
-            CloudSettings.objects.create(**self.create_args)
+            CloudSettingsOpenStack.objects.create(**self.create_args)
 
     def test_validates_fields(self):
-        cloud_settings = CloudSettings.objects.create(**self.create_args)
+        cloud_settings = CloudSettingsOpenStack.objects.create(**self.create_args)
         with self.assertRaises(ValidationError) as val:
             cloud_settings.clean_fields()
         error_dict = val.exception.error_dict
@@ -916,36 +916,36 @@ class CloudSettingsTests(TestCase):
 class JobSettingsTests(TestCase):
     def setUp(self):
         self.lando_connection = create_vm_lando_connection()
-        self.vm_command =create_vm_command()
+        self.vm_job_runtime = create_vm_job_runtime()
 
     def test_unique_names(self):
         JobSettings.objects.create(name='settings1',
                                    lando_connection=self.lando_connection,
-                                   vm_command=self.vm_command)
+                                   job_runtime_openstack=self.vm_job_runtime)
         with self.assertRaises(IntegrityError):
             JobSettings.objects.create(name='settings1',
                                        lando_connection=self.lando_connection,
-                                       vm_command=self.vm_command)
+                                       job_runtime_openstack=self.vm_job_runtime)
 
 
-class VMCommandTests(TestCase):
+class JobRuntimeOpenStackTests(TestCase):
     def setUp(self):
         self.create_args = {
-            'cloud_settings': CloudSettings.objects.create(name='cloud1', vm_project=VMProject.objects.create(name='project1')),
+            'cloud_settings': CloudSettingsOpenStack.objects.create(name='cloud1', vm_project=VMProject.objects.create(name='project1')),
         }
 
     def test_creates_with_required_fks(self):
-        VMCommand.objects.create(**self.create_args)
+        JobRuntimeOpenStack.objects.create(**self.create_args)
 
     def test_requires_cloud_settings(self):
         del self.create_args['cloud_settings']
         with self.assertRaises(IntegrityError) as val:
-            VMCommand.objects.create(**self.create_args)
+            JobRuntimeOpenStack.objects.create(**self.create_args)
 
     def test_validates_fields(self):
-        vm_command = VMCommand.objects.create(**self.create_args)
+        job_runtime = JobRuntimeOpenStack.objects.create(**self.create_args)
         with self.assertRaises(ValidationError) as val:
-            vm_command.clean_fields()
+            job_runtime.clean_fields()
         error_dict = val.exception.error_dict
         error_keys = set(error_dict.keys())
         expected_error_keys ={'image_name',

@@ -15,18 +15,18 @@ def populate_job_settings_lando_connection(apps, schema_editor):
             obj.save()
 
 
-def populate_vm_command_from_job_settings(apps, schema_editor):
+def populate_job_runtime_open_stack_from_job_settings(apps, schema_editor):
     JobSettings = apps.get_model("data", "JobSettings")
-    VMCommand = apps.get_model("data", "VMCommand")
+    JobRuntimeOpenStack = apps.get_model("data", "JobRuntimeOpenStack")
     for job_setting in JobSettings.objects.all():
-        vm_command = VMCommand.objects.create(
+        job_runtime_openstack = JobRuntimeOpenStack.objects.create(
             cloud_settings=job_setting.cloud_settings,
             image_name=job_setting.image_name,
             cwl_base_command=job_setting.cwl_base_command,
             cwl_post_process_command=job_setting.cwl_post_process_command,
             cwl_pre_process_command=job_setting.cwl_pre_process_command,
         )
-        job_setting.vm_command = vm_command
+        job_setting.job_runtime_openstack = job_runtime_openstack
         job_setting.save()
 
 
@@ -38,5 +38,5 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(populate_job_settings_lando_connection, migrations.RunPython.noop),
-        migrations.RunPython(populate_vm_command_from_job_settings, migrations.RunPython.noop),
+        migrations.RunPython(populate_job_runtime_open_stack_from_job_settings, migrations.RunPython.noop),
     ]

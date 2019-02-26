@@ -48,4 +48,12 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(help_text='Lando connection to use for this job settings',
                                     on_delete=django.db.models.deletion.CASCADE, to='data.LandoConnection'),
         ),
+        migrations.AlterModelOptions(
+            name='jobstrategy',
+            options={'verbose_name_plural': 'Job Strategies'},
+        ),
+        migrations.RenameModel(
+            old_name='CloudSettings',
+            new_name='CloudSettingsOpenStack',
+        ),
     ]

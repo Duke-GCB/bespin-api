@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='VMCommand',
+            name='JobRuntimeOpenStack',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('image_name', models.CharField(help_text='Name of the VM Image to launch', max_length=255)),
@@ -35,44 +35,40 @@ class Migration(migrations.Migration):
             field=models.CharField(default='1Gi', help_text='How much memory in k8s units to be use when running a job with this flavor', max_length=12),
         ),
         migrations.CreateModel(
-            name='K8sStepCommand',
+            name='JobRuntimeStepK8s',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('step_type', models.TextField(choices=[('stage_data', 'Stage Data'), ('run_workflow', 'Run Workflow'),
-                                                        ('organize_output', 'Organize Output'),
-                                                        ('save_output', 'Save Output'),
-                                                        ('record_output_project', 'Record Output Project')])),
+                ('step_type', models.CharField(choices=[('stage_data', 'Stage Data'), ('run_workflow', 'Run Workflow'), ('organize_output', 'Organize Output'), ('save_output', 'Save Output'), ('record_output_project', 'Record Output Project')], max_length=255)),
                 ('image_name', models.CharField(help_text='Name of the image to run for this step', max_length=255)),
-                ('cpus', models.IntegerField(help_text='Number of cpus to request when running this step command')),
-                ('memory',
-                 models.CharField(help_text='Memory in k8s units to request when running this step', max_length=255)),
+                ('flavor', models.ForeignKey(help_text='Cpu/Memory to use when running this step', on_delete=django.db.models.deletion.CASCADE, to='data.JobFlavor')),
                 ('base_command',
                  django.contrib.postgres.fields.jsonb.JSONField(help_text='JSON array with base command to run')),
             ],
         ),
+
         migrations.CreateModel(
-            name='K8sCommandSet',
+            name='JobRuntimeK8s',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('step_commands', models.ManyToManyField(help_text='Steps to be used by this set', to='data.K8sStepCommand'))
+                ('steps', models.ManyToManyField(help_text='Steps to be used by this job runtime', to='data.JobRuntimeStepK8s'))
             ],
         ),
         migrations.AddField(
             model_name='landoconnection',
             name='cluster_type',
-            field=models.CharField(choices=[('vm', 'VM Cluster Type'), ('k8s', 'K8s Cluster Type')], default='vm',
+            field=models.CharField(choices=[('vm', 'OpenStack Cluster Type'), ('k8s', 'K8s Cluster Type')], default='vm',
                                    max_length=255),
         ),
         migrations.AddField(
             model_name='jobsettings',
-            name='k8s_command_set',
+            name='job_runtime_k8s',
             field=models.ForeignKey(blank=True, help_text='K8s command set to use for type k8s', null=True,
-                                    on_delete=django.db.models.deletion.CASCADE, to='data.K8sCommandSet'),
+                                    on_delete=django.db.models.deletion.CASCADE, to='data.JobRuntimeK8s'),
         ),
         migrations.AddField(
             model_name='jobsettings',
-            name='vm_command',
+            name='job_runtime_openstack',
             field=models.ForeignKey(blank=True, help_text='VM command to use for type vm', null=True,
-                                    on_delete=django.db.models.deletion.CASCADE, to='data.VMCommand'),
+                                    on_delete=django.db.models.deletion.CASCADE, to='data.JobRuntimeOpenStack'),
         ),
     ]

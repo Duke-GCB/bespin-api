@@ -1,7 +1,7 @@
 from django.test import TestCase
 from data.lando import LandoJob
 from data.models import LandoConnection, Workflow, WorkflowVersion, Job, JobFileStageGroup, \
-    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, JobSettings, CloudSettings
+    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, JobSettings, CloudSettingsOpenStack
 from data.tests_models import create_vm_job_settings
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError

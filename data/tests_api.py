@@ -11,7 +11,7 @@ import datetime
 from data.models import Workflow, WorkflowVersion, Job, JobFileStageGroup, JobError, \
     DDSUserCredential, DDSEndpoint, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, \
     JobQuestionnaire, JobAnswerSet, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
-    WorkflowMethodsDocument, EmailMessage, EmailTemplate, CloudSettings, JobSettings, \
+    WorkflowMethodsDocument, EmailMessage, EmailTemplate, CloudSettingsOpenStack, JobSettings, \
     JobQuestionnaireType
 from data.tests_models import create_vm_job_settings
 from rest_framework.authtoken.models import Token

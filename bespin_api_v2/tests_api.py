@@ -4,8 +4,8 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from data.tests_api import UserLogin
 from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
-    JobSettings, CloudSettings, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job, K8sCommandSet, \
-    LandoConnection
+    JobSettings, CloudSettingsOpenStack, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job, \
+    JobRuntimeK8s, LandoConnection
 from data.tests_models import create_vm_job_settings
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -183,7 +183,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
             password='secret',
             queue_name='lando'
         )
-        job_settings = JobSettings.objects.create(lando_connection=lando_connection, k8s_command_set=K8sCommandSet.objects.create())
+        job_settings = JobSettings.objects.create(lando_connection=lando_connection, job_runtime_k8s=JobRuntimeK8s.objects.create())
 
         self.job_strategy = JobStrategy.objects.create(name='default', job_flavor=job_flavor, job_settings=job_settings)
         self.share_group = ShareGroup.objects.create()

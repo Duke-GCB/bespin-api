@@ -197,7 +197,7 @@ class JSONFieldMigrationTestCase(TestMigrations):
         self.assertEqual(items[1].system_job_order, {'color': 'blue', 'data': {'count': 3}})
 
 
-class VMCommandMigrationTestCase(TestMigrations):
+class JobRuntimeMigrationTestCase(TestMigrations):
     migrate_from = '0083_new_models_for_k8s'
     migrate_to = '0085_cleanup_moved_vm_fields'
     django_application = 'data'
@@ -242,7 +242,7 @@ class VMCommandMigrationTestCase(TestMigrations):
     def test_migrated_vm_settings_fields(self):
         JobSettings = self.apps.get_model('data', 'JobSettings')
         LandoConnection = self.apps.get_model('data', 'LandoConnection')
-        VMCommand = self.apps.get_model('data', 'VMCommand')
+        JobRuntimeOpenStack = self.apps.get_model('data', 'JobRuntimeOpenStack')
 
         first_lando_connection = LandoConnection.objects.first()
         job_settings = JobSettings.objects.order_by('name')
@@ -250,23 +250,23 @@ class VMCommandMigrationTestCase(TestMigrations):
         self.assertEqual(job_settings[0].name, 'settings1')
         self.assertEqual(job_settings[0].lando_connection, first_lando_connection)
         self.assertEqual(job_settings[0].lando_connection.cluster_type, 'vm')
-        self.assertEqual(job_settings[0].vm_command.image_name, 'myimage1')
+        self.assertEqual(job_settings[0].job_runtime_openstack.image_name, 'myimage1')
 
         self.assertEqual(job_settings[1].name, 'settings2')
         self.assertEqual(job_settings[1].lando_connection, first_lando_connection)
         self.assertEqual(job_settings[1].lando_connection.cluster_type, 'vm')
-        self.assertEqual(job_settings[1].vm_command.image_name, 'myimage2')
+        self.assertEqual(job_settings[1].job_runtime_openstack.image_name, 'myimage2')
 
-        vm_commands = VMCommand.objects.order_by('image_name')
-        self.assertEqual(len(vm_commands), 2)
-        self.assertEqual(vm_commands[0].image_name, 'myimage1')
-        self.assertEqual(vm_commands[0].cloud_settings.name, 'mycloud')
-        self.assertEqual(vm_commands[0].cwl_base_command, json.dumps(['cwltool']))
-        self.assertEqual(vm_commands[0].cwl_post_process_command, json.dumps(['cleanup']))
-        self.assertEqual(vm_commands[0].cwl_pre_process_command, json.dumps(['prep']))
+        job_runtimes = JobRuntimeOpenStack.objects.order_by('image_name')
+        self.assertEqual(len(job_runtimes), 2)
+        self.assertEqual(job_runtimes[0].image_name, 'myimage1')
+        self.assertEqual(job_runtimes[0].cloud_settings.name, 'mycloud')
+        self.assertEqual(job_runtimes[0].cwl_base_command, json.dumps(['cwltool']))
+        self.assertEqual(job_runtimes[0].cwl_post_process_command, json.dumps(['cleanup']))
+        self.assertEqual(job_runtimes[0].cwl_pre_process_command, json.dumps(['prep']))
 
-        self.assertEqual(vm_commands[1].image_name, 'myimage2')
-        self.assertEqual(vm_commands[1].cloud_settings.name, 'mycloud')
-        self.assertEqual(vm_commands[1].cwl_base_command, json.dumps(['cwltool2']))
-        self.assertEqual(vm_commands[1].cwl_post_process_command, json.dumps(['cleanup2']))
-        self.assertEqual(vm_commands[1].cwl_pre_process_command, json.dumps(['prep2']))
+        self.assertEqual(job_runtimes[1].image_name, 'myimage2')
+        self.assertEqual(job_runtimes[1].cloud_settings.name, 'mycloud')
+        self.assertEqual(job_runtimes[1].cwl_base_command, json.dumps(['cwltool2']))
+        self.assertEqual(job_runtimes[1].cwl_post_process_command, json.dumps(['cleanup2']))
+        self.assertEqual(job_runtimes[1].cwl_pre_process_command, json.dumps(['prep2']))

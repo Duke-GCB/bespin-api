@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
     JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
-    EmailTemplate, EmailMessage, JobSettings, CloudSettings, JobActivity
+    EmailTemplate, EmailMessage, JobSettings, CloudSettingsOpenStack, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
 
@@ -136,17 +136,17 @@ class VMFlavorSerializer(serializers.ModelSerializer):
 class AdminCloudSettingsSerializer(serializers.ModelSerializer):
     vm_project = VMProjectSerializer(read_only=True)
     class Meta:
-        model = CloudSettings
+        model = CloudSettingsOpenStack
         resource_name = 'cloud-settings'
         fields = '__all__'
 
 
 class AdminVMSettingsSerializer(serializers.ModelSerializer):
-    cloud_settings = AdminCloudSettingsSerializer(read_only=True, required=False, source='vm_command.cloud_settings')
-    image_name = serializers.CharField(source='vm_command.image_name')
-    cwl_base_command = serializers.CharField(source='vm_command.cwl_base_command')
-    cwl_post_process_command = serializers.CharField(source='vm_command.cwl_post_process_command')
-    cwl_pre_process_command = serializers.CharField(source='vm_command.cwl_pre_process_command')
+    cloud_settings = AdminCloudSettingsSerializer(read_only=True, required=False, source='job_runtime_openstack.cloud_settings')
+    image_name = serializers.CharField(source='job_runtime_openstack.image_name')
+    cwl_base_command = serializers.CharField(source='job_runtime_openstack.cwl_base_command')
+    cwl_post_process_command = serializers.CharField(source='job_runtime_openstack.cwl_post_process_command')
+    cwl_pre_process_command = serializers.CharField(source='job_runtime_openstack.cwl_pre_process_command')
     class Meta:
         model = JobSettings
         resource_name = 'vm-settings'

@@ -3,7 +3,7 @@ from rest_framework import serializers, fields, permissions, viewsets
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
-    WorkflowMethodsDocument, JobSettings, LandoConnection, VMCommand, K8sStepCommand
+    WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s
 from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -113,7 +113,7 @@ class AdminVMCommand(serializers.ModelSerializer):
     cwl_post_process_command = JSONStrField()
     cwl_pre_process_command = JSONStrField()
     class Meta:
-        model = VMCommand
+        model = JobRuntimeOpenStack
         resource_name = 'vm-command'
         fields = ('image_name', 'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command')
 

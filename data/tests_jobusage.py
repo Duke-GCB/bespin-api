@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
-from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, JobFlavor, VMProject, CloudSettings, \
-    JobSettings
+from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, JobFlavor, VMProject, \
+    CloudSettingsOpenStack, JobSettings
 from data.tests_models import create_vm_job_settings
 import datetime
 from unittest.mock import Mock, patch

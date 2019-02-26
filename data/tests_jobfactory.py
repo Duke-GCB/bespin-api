@@ -4,7 +4,7 @@ from django.test import override_settings
 from rest_framework.exceptions import ValidationError
 from unittest.mock import MagicMock, patch, Mock
 from data.models import DDSEndpoint, DDSUserCredential, Workflow, WorkflowVersion, JobFileStageGroup, ShareGroup, \
-    DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, JobSettings, CloudSettings, Job
+    DDSJobInputFile, URLJobInputFile, JobFlavor, VMProject, JobSettings, CloudSettingsOpenStack, Job
 from data.jobfactory import JobFactory, JobFactoryException, CloudStrategy, calculate_stage_group_size, \
     calculate_volume_size
 from data.tests_models import create_vm_job_settings
