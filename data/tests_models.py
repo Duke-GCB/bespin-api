@@ -1098,3 +1098,93 @@ class WorkflowConfigurationTestCase(TestCase):
                 default_job_strategy=self.job_strategy,
                 share_group=self.share_group
             )
+
+
+class JobRuntimeStepK8sTestCase(TestCase):
+    def test_create(self):
+        flavor = JobFlavor.objects.create(name='flavor1', cpus=10, memory='1GB')
+        JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.STAGE_DATA_STEP,
+            image_name='lando-util',
+            base_command=['download.py'],
+            flavor=flavor
+        )
+        JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.RUN_WORKFLOW_STEP,
+            image_name='calrissian',
+            base_command=['calrissian'],
+            flavor=flavor
+        )
+
+        # Flavor is required
+        with self.assertRaises(IntegrityError):
+            JobRuntimeStepK8s.objects.create(
+                step_type=JobRuntimeStepK8s.RUN_WORKFLOW_STEP,
+                image_name='calrissian',
+                base_command=['calrissian'])
+
+
+class JobRuntimeK8sTestCase(TestCase):
+    def setUp(self):
+        flavor = JobFlavor.objects.create(name='flavor1', cpus=10, memory='1GB')
+        self.stage_data_step = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.STAGE_DATA_STEP,
+            base_command=[],
+            flavor=flavor)
+        self.stage_data_step2 = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.STAGE_DATA_STEP,
+            base_command=['othercmd'],
+            flavor=flavor)
+        self.run_workflow_step = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.RUN_WORKFLOW_STEP,
+            base_command=[],
+            flavor=flavor)
+        self.organize_output_step = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.ORGANIZE_OUTPUT_STEP,
+            base_command=[],
+            flavor=flavor)
+        self.save_output_step = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.SAVE_OUTPUT_STEP,
+            base_command=[],
+            flavor=flavor)
+        self.record_output_project_step = JobRuntimeStepK8s.objects.create(
+            step_type=JobRuntimeStepK8s.RECORD_OUTPUT_PROJECT,
+            base_command=[],
+            flavor=flavor)
+
+    def test_create(self):
+        JobRuntimeK8s.objects.create()
+
+    def test_clean_requires_all_steps(self):
+        runtime = JobRuntimeK8s.objects.create()
+        with self.assertRaises(ValidationError):
+            runtime.clean()
+        runtime.steps = [
+            self.stage_data_step,
+            self.run_workflow_step,
+            self.organize_output_step,
+            self.save_output_step
+        ]
+        with self.assertRaises(ValidationError):
+            runtime.clean()
+        runtime.steps = [
+            self.stage_data_step,
+            self.run_workflow_step,
+            self.organize_output_step,
+            self.save_output_step,
+            self.record_output_project_step
+        ]
+        runtime.clean()
+
+    def test_clean_prevents_too_many_steps(self):
+        runtime = JobRuntimeK8s.objects.create()
+        runtime.steps = [
+            self.stage_data_step,
+            self.stage_data_step2,
+            self.run_workflow_step,
+            self.organize_output_step,
+            self.save_output_step,
+            self.record_output_project_step
+        ]
+        with self.assertRaises(ValidationError):
+            runtime.clean()

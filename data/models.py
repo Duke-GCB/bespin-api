@@ -211,6 +211,15 @@ class JobRuntimeStepK8s(models.Model):
 class JobRuntimeK8s(models.Model):
     steps = models.ManyToManyField(JobRuntimeStepK8s, help_text="Steps to be used by this job runtime")
 
+    def clean(self):
+        expected_step_types = [step_data[0] for step_data in JobRuntimeStepK8s.STEP_TYPES]
+        step_types = [step.step_type for step in self.steps.all()]
+        for expected_type in expected_step_types:
+            if expected_type not in step_types:
+                raise ValidationError("JobRuntimeK8s missing required {} step.".format(expected_type))
+        if len(step_types) != len(expected_step_types):
+            raise ValidationError("JobRuntimeK8s requires {} steps.".format(len(expected_step_types)))
+
     def __str__(self):
         return "K8sCommandSet - pk: {}".format(self.pk)
 
