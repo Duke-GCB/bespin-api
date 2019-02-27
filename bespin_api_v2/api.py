@@ -8,9 +8,9 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     WorkflowConfigurationSerializer, JobTemplateMinimalSerializer, JobTemplateSerializer, WorkflowVersionSerializer, \
     ShareGroupSerializer, JobTemplateValidatingSerializer, AdminJobSerializer, JobFileStageGroupSerializer, \
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
-    WorkflowMethodsDocumentSerializer
+    WorkflowMethodsDocumentSerializer, JobSerializer
 from gcb_web_auth.models import DDSUserCredential
-from data.serializers import JobSerializer
+from data.api import JobsViewSet as V1JobsViewSet
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
     Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument
 from data.exceptions import BespinAPIException
@@ -158,3 +158,7 @@ class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = WorkflowMethodsDocument.objects.all()
     serializer_class = WorkflowMethodsDocumentSerializer
+
+
+class JobsViewSet(V1JobsViewSet):
+    serializer_class = JobSerializer

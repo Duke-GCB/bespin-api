@@ -79,13 +79,13 @@ class WorkflowVersionConfiguration(object):
 
 class JobTemplate(object):
     def __init__(self, tag, name=STRING_VALUE_PLACEHOLDER, fund_code=STRING_VALUE_PLACEHOLDER,
-                 stage_group=None, job_order=None, job_vm_strategy=None):
+                 stage_group=None, job_order=None, job_strategy=None):
         self.tag = tag
         self.name = name
         self.fund_code = fund_code
         self.stage_group = stage_group
         self.job_order = job_order
-        self.job_vm_strategy = job_vm_strategy
+        self.job_strategy = job_strategy
         self.job = None
 
     def populate_job_order(self):
@@ -115,8 +115,8 @@ class JobTemplate(object):
         raise ValueError("Unknown type {}".format(type_value))
 
     def get_job_strategy(self, workflow_configuration):
-        if self.job_vm_strategy:
-            return self.job_vm_strategy
+        if self.job_strategy:
+            return self.job_strategy
         else:
             return workflow_configuration.default_job_strategy
 

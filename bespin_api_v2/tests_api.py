@@ -624,7 +624,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
             'stage_group': stage_group.id,
             'job_order': {'threads': 12, 'items': 'pie'},
             'share_group': self.share_group.id,
-            'job_vm_strategy': self.job_strategy.id,
+            'job_strategy': self.job_strategy.id,
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'My Job')

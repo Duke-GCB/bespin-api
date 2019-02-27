@@ -9,7 +9,7 @@ router.register(r'workflow-versions', api.WorkflowVersionsViewSet, 'v2-workflowv
 router.register(r'workflow-configurations', api.WorkflowConfigurationViewSet, 'v2-workflowconfigurations')
 router.register(r'job-strategies', api.JobStrategyViewSet, 'v2-jobstrategies')
 router.register(r'share-groups', api.ShareGroupViewSet, 'v2-sharegroup')
-router.register(r'jobs', data_api.JobsViewSet, 'v2-job')
+router.register(r'jobs', api.JobsViewSet, 'v2-job')
 router.register(r'job-file-stage-groups', data_api.JobFileStageGroupViewSet, 'v2-jobfilestagegroup')
 router.register(r'dds-job-input-files', data_api.DDSJobInputFileViewSet, 'v2-ddsjobinputfile')
 router.register(r'url-job-input-files', data_api.URLJobInputFileViewSet, 'v2-urljobinputfile')
