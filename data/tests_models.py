@@ -1155,18 +1155,8 @@ class JobRuntimeK8sTestCase(TestCase):
     def test_create(self):
         JobRuntimeK8s.objects.create()
 
-    def test_clean_requires_all_steps(self):
+    def test_adding_all_steps(self):
         runtime = JobRuntimeK8s.objects.create()
-        with self.assertRaises(ValidationError):
-            runtime.clean()
-        runtime.steps = [
-            self.stage_data_step,
-            self.run_workflow_step,
-            self.organize_output_step,
-            self.save_output_step
-        ]
-        with self.assertRaises(ValidationError):
-            runtime.clean()
         runtime.steps = [
             self.stage_data_step,
             self.run_workflow_step,
@@ -1174,17 +1164,4 @@ class JobRuntimeK8sTestCase(TestCase):
             self.save_output_step,
             self.record_output_project_step
         ]
-        runtime.clean()
-
-    def test_clean_prevents_too_many_steps(self):
-        runtime = JobRuntimeK8s.objects.create()
-        runtime.steps = [
-            self.stage_data_step,
-            self.stage_data_step2,
-            self.run_workflow_step,
-            self.organize_output_step,
-            self.save_output_step,
-            self.record_output_project_step
-        ]
-        with self.assertRaises(ValidationError):
-            runtime.clean()
+        runtime.save()
