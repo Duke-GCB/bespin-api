@@ -4,7 +4,7 @@ from data.models import Workflow, WorkflowVersion
 from data.models import Job, JobFileStageGroup, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, JobError
 from data.models import LandoConnection
 from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, \
-    CloudSettingsOpenStack, JobRuntimeOpenStack
+    CloudSettingsOpenStack, JobRuntimeOpenStack, JobRuntimeStepK8s, JobRuntimeK8s
 from data.models import JobToken
 from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
 from data.models import EmailTemplate, EmailMessage
@@ -14,6 +14,7 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 import json
+from mock import patch
 
 CWL_URL = 'https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl'
 
@@ -36,6 +37,10 @@ def create_vm_job_runtime(vm_project=None, cloud_name='cloud'):
         cwl_post_process_command='',
         cwl_pre_process_command='',
     )
+
+
+def create_k8s_job_runtime():
+    return JobRuntimeK8s.objects.create()
 
 
 def create_vm_job_settings(name='default_settings', cloud_name='cloud', vm_project=None):
@@ -585,6 +590,23 @@ class LandoConnectionTests(TestCase):
         self.assertEqual('jpb67', connection.username)
         self.assertEqual('secret', connection.password)
         self.assertEqual('lando', connection.queue_name)
+        self.assertEqual(LandoConnection.VM_TYPE, connection.cluster_type)
+
+    def test_k8s_type_functionality(self):
+        LandoConnection.objects.create(host='10.109.253.74', username='jpb67', password='secret', queue_name='lando',
+                                       cluster_type=LandoConnection.K8S_TYPE)
+        connection = LandoConnection.objects.first()
+        self.assertEqual('10.109.253.74', connection.host)
+        self.assertEqual('jpb67', connection.username)
+        self.assertEqual('secret', connection.password)
+        self.assertEqual('lando', connection.queue_name)
+        self.assertEqual(LandoConnection.K8S_TYPE, connection.cluster_type)
+
+    @patch('data.models.Job', autospec=True)
+    def test_get_for_job_id(self, mock_job):
+        result = LandoConnection.get_for_job_id(23)
+        self.assertEqual(result, mock_job.objects.get.return_value.job_settings.lando_connection)
+        mock_job.objects.get.assert_called_with(pk=23)
 
 
 class JobErrorTests(TestCase):
@@ -917,6 +939,7 @@ class JobSettingsTests(TestCase):
     def setUp(self):
         self.lando_connection = create_vm_lando_connection()
         self.vm_job_runtime = create_vm_job_runtime()
+        self.k8s_job_runtime = create_k8s_job_runtime()
 
     def test_unique_names(self):
         JobSettings.objects.create(name='settings1',
@@ -926,6 +949,44 @@ class JobSettingsTests(TestCase):
             JobSettings.objects.create(name='settings1',
                                        lando_connection=self.lando_connection,
                                        job_runtime_openstack=self.vm_job_runtime)
+
+    def test_clean_with_vm_cluster_type(self):
+        self.lando_connection.cluster_type = LandoConnection.VM_TYPE
+        self.lando_connection.save()
+        settings = JobSettings.objects.create(
+            name='settings1',
+            lando_connection=self.lando_connection,
+            job_runtime_openstack=self.vm_job_runtime)
+        settings.clean()
+
+        settings.job_runtime_k8s=self.k8s_job_runtime
+        with self.assertRaises(ValidationError) as raised_exception:
+            settings.clean()
+        self.assertIn('job_runtime_k8s must be null', str(raised_exception.exception))
+
+        settings.job_runtime_openstack = None
+        with self.assertRaises(ValidationError) as raised_exception:
+            settings.clean()
+        self.assertIn('job_runtime_openstack must be filled in', str(raised_exception.exception))
+
+    def test_clean_with_k8s_cluster_type(self):
+        self.lando_connection.cluster_type = LandoConnection.K8S_TYPE
+        self.lando_connection.save()
+        settings = JobSettings.objects.create(
+            name='settings1',
+            lando_connection=self.lando_connection,
+            job_runtime_k8s=self.k8s_job_runtime)
+        settings.clean()
+
+        settings.job_runtime_openstack=self.vm_job_runtime
+        with self.assertRaises(ValidationError) as raised_exception:
+            settings.clean()
+        self.assertIn('job_runtime_openstack must be null', str(raised_exception.exception))
+
+        settings.job_runtime_k8s = None
+        with self.assertRaises(ValidationError) as raised_exception:
+            settings.clean()
+        self.assertIn('job_runtime_k8s must be filled in', str(raised_exception.exception))
 
 
 class JobRuntimeOpenStackTests(TestCase):
@@ -977,6 +1038,7 @@ class JobFlavorTests(TestCase):
         self.assertEqual(len(flavors), 1)
         self.assertEqual(flavors[0].name, 'm1.small')
         self.assertEqual(flavors[0].cpus, 1)
+        self.assertEqual(flavors[0].memory, '1Gi')
 
     def test_cpus(self):
         JobFlavor.objects.create(name='m1.xxlarge', cpus=32)
@@ -984,6 +1046,13 @@ class JobFlavorTests(TestCase):
         self.assertEqual(len(flavors), 1)
         self.assertEqual(flavors[0].name, 'm1.xxlarge')
         self.assertEqual(flavors[0].cpus, 32)
+        self.assertEqual(flavors[0].memory, '1Gi')
+
+    def test_memory(self):
+        JobFlavor.objects.create(name='m1.xxlarge', cpus=32, memory='2MB')
+        flavors = JobFlavor.objects.all()
+        self.assertEqual(len(flavors), 1)
+        self.assertEqual(flavors[0].memory, '2MB')
 
 
 class WorkflowConfigurationTestCase(TestCase):
