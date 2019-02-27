@@ -9,6 +9,7 @@ from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStr
 from data.tests_models import create_vm_job_settings
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
+from mock import patch, Mock
 
 
 class AdminWorkflowViewSetTestCase(APITestCase):
@@ -761,20 +762,233 @@ class JobsTestCase(APITestCase):
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
         self.job_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_settings = create_vm_job_settings()
 
     def test_jobs_list_shows_job_settings(self):
         admin_user = self.user_login.become_admin_user()
-        job_settings = create_vm_job_settings()
         job = Job.objects.create(name='somejob',
                                  workflow_version=self.workflow_version,
                                  job_order={},
                                  user=admin_user,
                                  share_group=self.share_group,
-                                 job_settings=job_settings,
+                                 job_settings=self.job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-job-list') + '{}/'.format(job.id)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['job_settings'], job_settings.id)
+        self.assertEqual(response.data['job_settings'], self.job_settings.id)
         self.assertNotIn('vm_settings', response.data)
+
+    def testAdminSeeAllData(self):
+        normal_user = self.user_login.become_normal_user()
+        job = Job.objects.create(name='my job',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=normal_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        # normal user can't see admin endpoint
+        url = reverse('v2-admin_job-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        other_user = self.user_login.become_other_normal_user()
+        job = Job.objects.create(name='my job2',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=other_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        # admin user can see both via admin endpoint
+        admin_user = self.user_login.become_admin_user()
+        url = reverse('v2-admin_job-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(2, len(response.data))
+        self.assertIn(other_user.id, [item['user']['id'] for item in response.data])
+        self.assertIn(normal_user.id, [item['user']['id'] for item in response.data])
+        self.assertIn('my job', [item['name'] for item in response.data])
+        self.assertIn('my job2', [item['name'] for item in response.data])
+        self.assertEqual(['RnaSeq', 'RnaSeq'], [item['workflow_version']['name'] for item in response.data])
+        self.assertIn(self.share_group.id, [item['share_group'] for item in response.data])
+        self.assertEqual([None, None], [item['user'].get('cleanup_job_vm') for item in response.data])
+
+    def testAdminCanSeeDeletedJob(self):
+        url = reverse('v2-admin_job-list')
+        normal_user = self.user_login.become_normal_user()
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='my job',
+                                 state=Job.JOB_STATE_NEW,
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=normal_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+
+        # Now mark as deleted
+        job.state = Job.JOB_STATE_DELETED
+        job.save()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+        self.assertEqual(response.data[0]['state'], 'D')
+
+    def testAdminFilterJobsVmInstanceName(self):
+        admin_user = self.user_login.become_admin_user()
+        Job.objects.create(name='somejob',
+                           workflow_version=self.workflow_version,
+                           vm_instance_name='vm_job_1',
+                           job_order={},
+                           user=admin_user,
+                           share_group=self.share_group,
+                           job_settings=self.job_settings,
+                           job_flavor=self.job_flavor,
+                           )
+        Job.objects.create(name='somejob2',
+                           workflow_version=self.workflow_version,
+                           vm_instance_name='vm_job_2',
+                           job_order={},
+                           user=admin_user,
+                           share_group=self.share_group,
+                           job_settings=self.job_settings,
+                           job_flavor=self.job_flavor,
+                           )
+        url = reverse('v2-admin_job-list') + '?vm_instance_name=vm_job_1'
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+        self.assertEqual('somejob', response.data[0]['name'])
+
+    def test_settings_effect_job_cleanup_vm(self):
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+
+        job.cleanup_vm = True
+        job.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(True, response.data['cleanup_vm'])
+
+        job.cleanup_vm = False
+        job.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(False, response.data['cleanup_vm'])
+
+    def test_normal_user_trying_to_update_job(self):
+        """
+        Only admin should change job state or job step.
+        Regular users can only change the state and step via the start, cancel and restart job endpoints.
+        """
+        normal_user = self.user_login.become_normal_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=normal_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                   data={
+                                        'state': Job.JOB_STATE_FINISHED,
+                                        'step': Job.JOB_STEP_RUNNING,
+                                   })
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @patch('bespin_api_v2.api.JobMailer')
+    def testAdminUserUpdatesStateAndStep(self, MockJobMailer):
+        """
+        Admin should be able to change job state and job step.
+        """
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                    data={
+                                        'state': Job.JOB_STATE_RUNNING,
+                                        'step': Job.JOB_STEP_CREATE_VM,
+                                    })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_RUNNING, job.state)
+        self.assertEqual(Job.JOB_STEP_CREATE_VM, job.step)
+
+    @patch('bespin_api_v2.api.JobMailer')
+    def test_mails_when_job_state_changes(self, MockJobMailer):
+        mock_mail_current_state = Mock()
+        MockJobMailer.return_value.mail_current_state = mock_mail_current_state
+        """
+        Admin should be able to change job state and job step.
+        """
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 state=Job.JOB_STATE_AUTHORIZED,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                    data={
+                                        'state': Job.JOB_STATE_RUNNING,
+                                        'step': Job.JOB_STEP_CREATE_VM,
+                                    })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(mock_mail_current_state.called)
+
+    @patch('bespin_api_v2.api.JobMailer')
+    def test_does_not_mail_when_job_state_stays(self, MockJobMailer):
+        mock_mail_current_state = Mock()
+        MockJobMailer.return_value.mail_current_state = mock_mail_current_state
+        """
+        Admin should be able to change job state and job step.
+        """
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 state=Job.JOB_STATE_RUNNING,
+                                 step=Job.JOB_STEP_CREATE_VM,
+                                 job_settings=self.job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                    data={
+                                        'state': Job.JOB_STATE_RUNNING,
+                                        'step': Job.JOB_STEP_RUNNING,
+                                    })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(mock_mail_current_state.called)
