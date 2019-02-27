@@ -748,3 +748,33 @@ class WorkflowVersionsViewSet(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['enable_ui'], False)
+
+
+class JobsTestCase(APITestCase):
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        workflow = Workflow.objects.create(name='RnaSeq')
+        cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
+        self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
+                                                               version="1",
+                                                               url=cwl_url,
+                                                               fields=[])
+        self.share_group = ShareGroup.objects.create(name='Results Checkers')
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
+
+    def test_jobs_list_shows_job_settings(self):
+        admin_user = self.user_login.become_admin_user()
+        job_settings = create_vm_job_settings()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-job-list') + '{}/'.format(job.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['job_settings'], job_settings.id)
+        self.assertNotIn('vm_settings', response.data)
