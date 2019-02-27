@@ -99,17 +99,22 @@ class ShareGroup(models.Model):
         return "ShareGroup - pk: {} name: '{}' email: '{}'".format(self.pk, self.name, self.email,)
 
 
-class VMFlavor(models.Model):
+class JobFlavor(models.Model):
     """
-    Specifies parameters for requesting cloud resources
+    Specifies CPU/RAM requested of a cloud resource.
+    For a VM we use the name field. For K8s container we use cpus and memory.
+    The cpus field is also used for the VM job resource utilization calculation.
+    For memory field see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory.
     """
     name = models.CharField(max_length=255, unique=True,
                             help_text="The name of the flavor to use when launching instances (specifies CPU/RAM)")
     cpus = models.IntegerField(default=1,
                                help_text="How many CPUs are assigned to this flavor")
+    memory = models.CharField(default='1Gi', max_length=12,
+                              help_text="How much memory in k8s units to be use when running a job with this flavor")
 
     def __str__(self):
-        return "VMFlavor - pk: {} name: '{}' cpus: {}".format(self.pk, self.name, self.cpus,)
+        return "JobFlavor - pk: {} name: '{}' cpus: {} memory: {}".format(self.pk, self.name, self.cpus, self.memory, )
 
 
 class VMProject(models.Model):
@@ -121,7 +126,7 @@ class VMProject(models.Model):
         return "VMProject - pk: {} name: '{}'".format(self.pk, self.name,)
 
 
-class CloudSettings(models.Model):
+class CloudSettingsOpenStack(models.Model):
     name = models.CharField(max_length=255, help_text='Short name of this cloudsettings', default='default_settings', unique=True)
     vm_project = models.ForeignKey(VMProject,
                                    help_text='Project name to use when creating VM instances for this questionnaire')
@@ -139,24 +144,105 @@ class CloudSettings(models.Model):
         verbose_name_plural = "Cloud Settings Collections"
 
 
-class VMSettings(models.Model):
+class LandoConnection(models.Model):
     """
-    A collection of settings that specify details for VMs launched
+    Settings used to connect with lando to start, restart or cancel a job.
     """
-    name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
-    cloud_settings = models.ForeignKey(CloudSettings, help_text='Cloud settings ')
+    VM_TYPE = 'vm'
+    K8S_TYPE = 'k8s'
+    TYPES = [
+        (VM_TYPE, 'OpenStack Cluster Type'),
+        (K8S_TYPE, 'K8s Cluster Type'),
+    ]
+    cluster_type = models.CharField(max_length=255, choices=TYPES, default=VM_TYPE)
+    host = models.CharField(max_length=255)
+    username = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    queue_name = models.CharField(max_length=255)
+
+    @staticmethod
+    def get_for_job_id(job_id):
+        job = Job.objects.get(pk=job_id)
+        return job.job_settings.lando_connection
+
+    def __str__(self):
+        return "LandoConnection - pk: {} host: '{}' cluster_type: {}".format(self.pk, self.host, self.cluster_type)
+
+
+class JobRuntimeOpenStack(models.Model):
+    cloud_settings = models.ForeignKey(CloudSettingsOpenStack, help_text='Cloud settings ')
     image_name = models.CharField(max_length=255, help_text='Name of the VM Image to launch')
     cwl_base_command = models.TextField(help_text='JSON-encoded command array to run the  image\'s installed CWL engine')
     cwl_post_process_command = models.TextField(blank=True,
                                                 help_text='JSON-encoded command array to run after workflow completes')
     cwl_pre_process_command = models.TextField(blank=True,
                                                 help_text='JSON-encoded command array to run before cwl_base_command')
+    def __str__(self):
+        return "VMCommand - pk: {} image_name: '{}'".format(
+            self.pk, self.image_name)
+
+
+class JobRuntimeStepK8s(models.Model):
+    """
+    For memory field see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#meaning-of-memory.
+    """
+    STAGE_DATA_STEP = 'stage_data'
+    RUN_WORKFLOW_STEP = 'run_workflow'
+    ORGANIZE_OUTPUT_STEP = 'organize_output'
+    SAVE_OUTPUT_STEP = 'save_output'
+    RECORD_OUTPUT_PROJECT = 'record_output_project'
+    STEP_TYPES = [
+        (STAGE_DATA_STEP, 'Stage Data'),
+        (RUN_WORKFLOW_STEP, 'Run Workflow'),
+        (ORGANIZE_OUTPUT_STEP, 'Organize Output'),
+        (SAVE_OUTPUT_STEP, 'Save Output'),
+        (RECORD_OUTPUT_PROJECT, "Record Output Project"),
+    ]
+    step_type = models.CharField(max_length=255, choices=STEP_TYPES)
+    image_name = models.CharField(max_length=255, help_text='Name of the image to run for this step')
+    base_command = JSONField(help_text='JSON array with base command to run')
+    flavor = models.ForeignKey(JobFlavor, help_text='Cpu/Memory to use when running this step')
 
     def __str__(self):
-        return "VMSettings - pk: {} name: '{}' image_name: '{}'".format(self.pk, self.name, self.image_name,)
+        return "K8sStepCommand - pk: {} step_type: '{}' image_name: '{}' base_command: '{}' cpus: {} memory:{}".format(
+            self.pk, self.step_type, self.image_name, self.base_command, self.flavor.cpus, self.flavor.memory)
+
+
+class JobRuntimeK8s(models.Model):
+    steps = models.ManyToManyField(JobRuntimeStepK8s, help_text="Steps to be used by this job runtime")
+
+    def __str__(self):
+        return "K8sCommandSet - pk: {}".format(self.pk)
+
+
+class JobSettings(models.Model):
+    """
+    A collection of settings that specify details for VMs launched
+    """
+    name = models.CharField(max_length=255, help_text='Short name of these settings', default='default_settings', unique=True)
+    lando_connection = models.ForeignKey(LandoConnection, help_text='Lando connection to use for this job settings')
+    job_runtime_openstack = models.ForeignKey(JobRuntimeOpenStack, help_text='VM command to use for type vm', null=True, blank=True)
+    job_runtime_k8s = models.ForeignKey(JobRuntimeK8s, help_text='K8s command set to use for type k8s', null=True, blank=True)
+
+    def clean(self):
+        cluster_type = self.lando_connection.cluster_type
+        if cluster_type == LandoConnection.VM_TYPE:
+            if self.job_runtime_openstack is None:
+                raise ValidationError("job_runtime_openstack must be filled in when using a lando_connection with OpenStack cluster type")
+            if self.job_runtime_k8s:
+                raise ValidationError("job_runtime_k8s must be null when using a lando_connection with VM cluster type")
+        elif cluster_type == LandoConnection.K8S_TYPE:
+            if self.job_runtime_k8s is None:
+                raise ValidationError("job_runtime_k8s must be filled in when using a lando_connection with k8s cluster type")
+            if self.job_runtime_openstack:
+                raise ValidationError("job_runtime_openstack must be null when using a lando_connection with k8s cluster type")
+
+    def __str__(self):
+        return "JobSettings - pk: {} name: '{}' cluster_type: '{}'".format(self.pk, self.name,
+                                                                           self.lando_connection.cluster_type)
 
     class Meta:
-        verbose_name_plural = "VM Settings Collections"
+        verbose_name_plural = "Job Settings Collections"
 
 
 class Job(models.Model):
@@ -215,10 +301,10 @@ class Job(models.Model):
     step = models.CharField(max_length=1, choices=JOB_STEPS, blank=True,
                             help_text="Job step (progress within Running state)")
     last_updated = models.DateTimeField(auto_now=True)
-    vm_settings = models.ForeignKey(VMSettings,
-                                    help_text='Collection of settings to use when launching VM for this job')
-    vm_flavor = models.ForeignKey(VMFlavor,
-                                  help_text='VM Flavor to use when launching VM for this job')
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Settings to use when running workflows on VMs or k8s Jobs')
+    job_flavor = models.ForeignKey(JobFlavor,
+                                   help_text='Cpu/Memory to use when running the workflow associated with this job')
     vm_instance_name = models.CharField(max_length=255, blank=True,
                                         help_text="Name of the vm this job is/was running on.")
     vm_volume_name = models.CharField(max_length=255, blank=True,
@@ -307,19 +393,6 @@ class JobError(models.Model):
         return "JobError - pk: {} job.pk: {} job_step: '{}'".format(self.pk, self.job.pk, self.get_job_step_display())
 
 
-class LandoConnection(models.Model):
-    """
-    Settings used to connect with lando to start, restart or cancel a job.
-    """
-    host = models.CharField(max_length=255)
-    username = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-    queue_name = models.CharField(max_length=255)
-
-    def __str__(self):
-        return "LandoConnection - pk: {} host: '{}'".format(self.pk, self.host,)
-
-
 class JobQuestionnaireType(models.Model):
     tag = models.SlugField(help_text="Unique tag for specifying a questionnaire for a workflow version", unique=True)
 
@@ -344,10 +417,10 @@ class JobQuestionnaire(models.Model):
                                                   "a job answer set.")
     share_group = models.ForeignKey(ShareGroup,
                                     help_text='Users who will have job output shared with them')
-    vm_settings = models.ForeignKey(VMSettings,
-                                    help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(VMFlavor,
-                                  help_text='VM Flavor to use when creating VM instances for this questionnaire')
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Settings to use when running workflows on VMs or k8s Jobs')
+    job_flavor = models.ForeignKey(JobFlavor,
+                                  help_text='Cpu/Memory to use when running the workflow for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
     volume_size_factor = models.IntegerField(default=0,
@@ -501,14 +574,14 @@ class EmailMessage(models.Model):
         self.save()
 
 
-class VMStrategy(models.Model):
+class JobStrategy(models.Model):
     """
     Specifies a VM strategy used to create a job.
     """
     name = models.CharField(max_length=255, help_text="Short user facing name")
-    vm_settings = models.ForeignKey(VMSettings,
-                                    help_text='Collection of settings to use when launching job VMs for this questionnaire')
-    vm_flavor = models.ForeignKey(VMFlavor,
+    job_settings = models.ForeignKey(JobSettings,
+                                     help_text='Settings to use when running workflows on VMs or k8s Jobs for this questionnaire')
+    job_flavor = models.ForeignKey(JobFlavor,
                                   help_text='VM Flavor to use when creating VM instances for this questionnaire')
     volume_size_base = models.IntegerField(default=100,
                                            help_text='Base size in GB of for determining job volume size')
@@ -519,11 +592,11 @@ class VMStrategy(models.Model):
                                      help_text='JSON-encoded dictionary of volume mounts, e.g. {"/dev/vdb1": "/work"}')
 
     class Meta:
-        verbose_name_plural = "VM Strategies"
+        verbose_name_plural = "Job Strategies"
 
     def __str__(self):
-        return "VMStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(
-            self.pk, self.name, self.vm_flavor.name, self.volume_size_base, self.volume_size_factor)
+        return "JobStrategy - pk: {} name: '{}' flavor: '{}' volume_size_base:'{}' volume_size_factor: '{}'".format(
+            self.pk, self.name, self.job_flavor.name, self.volume_size_base, self.volume_size_factor)
 
 
 class WorkflowConfiguration(models.Model):
@@ -533,7 +606,7 @@ class WorkflowConfiguration(models.Model):
     tag = models.SlugField(help_text="Unique tag to represent this workflow")
     workflow = models.ForeignKey(Workflow)
     system_job_order = JSONField(help_text="Dictionary containing the portion of the job order specified by system.")
-    default_vm_strategy = models.ForeignKey(VMStrategy,
+    default_job_strategy = models.ForeignKey(JobStrategy,
                                             help_text='VM setup to use for jobs created with this configuration')
     share_group = models.ForeignKey(ShareGroup,
                                     help_text='Users who will have job output shared with them')

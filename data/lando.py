@@ -15,8 +15,8 @@ class LandoConfig(object):
     """
     Settings for the AMQP queue we send messages to lando server over.
     """
-    def __init__(self):
-        self.work_queue_config = LandoConnection.objects.first()
+    def __init__(self, job_id):
+        self.work_queue_config = LandoConnection.get_for_job_id(job_id)
 
 
 class LandoJob(object):
@@ -30,7 +30,7 @@ class LandoJob(object):
         """
         self.job_id = job_id
         self.user = user
-        self.config = LandoConfig()
+        self.config = LandoConfig(job_id)
 
     def start(self):
         """

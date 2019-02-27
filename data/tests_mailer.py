@@ -1,9 +1,11 @@
 from django.test import TestCase
-from data.mailer import EmailMessageFactory, EmailMessageSender, JobMailer
+from data.mailer import EmailMessageFactory, EmailMessageSender, JobMailer, MailerConfig, MailerClient, EMAIL_EXCHANGE, \
+    ROUTING_KEY
 from data.models import EmailMessage, EmailTemplate, Job
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch, call, ANY
 from data.exceptions import EmailServiceException, EmailAlreadySentException
 from django.test.utils import override_settings
+
 
 class EmailMessageFactoryTestCase(TestCase):
 
@@ -218,3 +220,26 @@ class JobMailerTestCase(TestCase):
             call().send()
         ]
         self.assertEqual(MockSender.mock_calls, expected_calls)
+
+
+class MailerConfigTestCase(TestCase):
+    @patch('data.mailer.LandoConnection', autospec=True)
+    def test_constructor(self, mock_lando_connection):
+        mailer_config = MailerConfig(job_id=23)
+
+        self.assertEqual(mailer_config.work_queue_config, mock_lando_connection.get_for_job_id.return_value)
+        mock_lando_connection.get_for_job_id.assert_called_with(23)
+
+
+class MailerClientTestCase(TestCase):
+    @patch('data.mailer.MailerConfig', autospec=True)
+    @patch('data.mailer.WorkQueueConnection')  # autospec was unable to find connection property
+    def test_send(self, mock_work_queue_connection, mock_mailer_config):
+        client = MailerClient(job_id=23)
+        client.send(send_email_id=45)
+
+        mock_mailer_config.assert_called_with(23)
+        mock_work_queue_connection.assert_called_with(mock_mailer_config.return_value)
+
+        mock_channel = mock_work_queue_connection.return_value.connection.channel.return_value
+        mock_channel.basic_publish.assert_called_with(exchange=EMAIL_EXCHANGE, routing_key=ROUTING_KEY, body=ANY)

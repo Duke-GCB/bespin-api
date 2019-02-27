@@ -1,7 +1,8 @@
 from django.test import TestCase
-from data.lando import LandoJob
+from data.lando import LandoJob, LandoConfig
 from data.models import LandoConnection, Workflow, WorkflowVersion, Job, JobFileStageGroup, \
-    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, VMFlavor, VMProject, VMSettings, CloudSettings
+    DDSJobInputFile, DDSEndpoint, DDSUserCredential, ShareGroup, JobFlavor, VMProject, JobSettings, CloudSettingsOpenStack
+from data.tests_models import create_vm_job_settings
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
 from unittest.mock import patch, call
@@ -13,7 +14,6 @@ class LandoJobTests(TestCase):
         endpoint = DDSEndpoint.objects.create(name='app1', agent_key='abc123')
         user_credentials = DDSUserCredential.objects.create(user=self.user, token='abc123', endpoint=endpoint,
                                                             dds_id='5432')
-        LandoConnection.objects.create(host='127.0.0.1', username='jpb67', password='secret', queue_name='lando')
         self.workflow = Workflow.objects.create(name='RnaSeq')
         workflow_version = WorkflowVersion.objects.create(workflow=self.workflow,
                                                           object_name='#main',
@@ -22,18 +22,16 @@ class LandoJobTests(TestCase):
                                                           fields=[])
         self.stage_group = JobFileStageGroup.objects.create(user=self.user)
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        vm_flavor = VMFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        job_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_settings = create_vm_job_settings()
         self.job = Job.objects.create(workflow_version=workflow_version,
                                       job_order={},
                                       user=self.user,
                                       stage_group=self.stage_group,
                                       share_group=self.share_group,
                                       volume_size=100,
-                                      vm_settings=self.vm_settings,
-                                      vm_flavor=vm_flavor)
+                                      job_settings=self.job_settings,
+                                      job_flavor=job_flavor)
         DDSJobInputFile.objects.create(stage_group=self.stage_group,
                                        project_id='1234',
                                        file_id='5321',
@@ -44,6 +42,10 @@ class LandoJobTests(TestCase):
                                        file_id='5322',
                                        dds_user_credentials=user_credentials,
                                        destination_path='sample2.fasta')
+
+    def test_constructor(self):
+        job = LandoJob(self.job.id, self.user)
+        self.assertEqual(job.config.work_queue_config, self.job_settings.lando_connection)
 
     @patch('data.lando.LandoJob._make_client')
     @patch('data.lando.give_download_permissions')
@@ -106,3 +108,12 @@ class LandoJobTests(TestCase):
         job = LandoJob(self.job.id, self.user)
         with self.assertRaises(ValidationError) as raised_error:
             job.restart()
+
+
+class LandoConfigTestCase(TestCase):
+    @patch('data.lando.LandoConnection', autospec=True)
+    def test_constructor(self, mock_lando_connection):
+        mailer_config = LandoConfig(job_id=23)
+
+        self.assertEqual(mailer_config.work_queue_config, mock_lando_connection.get_for_job_id.return_value)
+        mock_lando_connection.get_for_job_id.assert_called_with(23)

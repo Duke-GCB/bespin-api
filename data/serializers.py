@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
-    JobQuestionnaire, VMFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
-    EmailTemplate, EmailMessage, VMSettings, CloudSettings, JobActivity
+    JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
+    EmailTemplate, EmailMessage, JobSettings, CloudSettingsOpenStack, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
 
@@ -72,6 +72,7 @@ class JobSerializer(serializers.ModelSerializer):
     job_errors = JobErrorSerializer(required=False, read_only=True, many=True)
     run_token = serializers.CharField(required=False, read_only=True, source='run_token.token')
     usage = serializers.SerializerMethodField()
+    vm_settings = serializers.IntegerField(source='job_settings_id')
 
     def get_usage(self, job):
         """
@@ -123,8 +124,11 @@ class VMProjectSerializer(serializers.ModelSerializer):
 
 
 class VMFlavorSerializer(serializers.ModelSerializer):
+    """
+    Serializes new JobFlavor model into old VMFlavor format to maintain original vm-flavors api
+    """
     class Meta:
-        model = VMFlavor
+        model = JobFlavor
         resource_name = 'vm-flavors'
         fields = '__all__'
 
@@ -132,17 +136,24 @@ class VMFlavorSerializer(serializers.ModelSerializer):
 class AdminCloudSettingsSerializer(serializers.ModelSerializer):
     vm_project = VMProjectSerializer(read_only=True)
     class Meta:
-        model = CloudSettings
+        model = CloudSettingsOpenStack
         resource_name = 'cloud-settings'
         fields = '__all__'
 
 
 class AdminVMSettingsSerializer(serializers.ModelSerializer):
-    cloud_settings = AdminCloudSettingsSerializer(read_only=True)
+    cloud_settings = AdminCloudSettingsSerializer(read_only=True, required=False, source='job_runtime_openstack.cloud_settings')
+    image_name = serializers.CharField(source='job_runtime_openstack.image_name')
+    cwl_base_command = serializers.CharField(source='job_runtime_openstack.cwl_base_command')
+    cwl_post_process_command = serializers.CharField(source='job_runtime_openstack.cwl_post_process_command')
+    cwl_pre_process_command = serializers.CharField(source='job_runtime_openstack.cwl_pre_process_command')
     class Meta:
-        model = VMSettings
+        model = JobSettings
         resource_name = 'vm-settings'
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'cloud_settings', 'image_name',
+            'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command'
+        ]
 
 
 class AdminJobSerializer(serializers.ModelSerializer):
@@ -150,8 +161,8 @@ class AdminJobSerializer(serializers.ModelSerializer):
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
-    vm_settings = AdminVMSettingsSerializer(read_only=True)
-    vm_flavor = VMFlavorSerializer(read_only=True)
+    vm_settings = AdminVMSettingsSerializer(read_only=True, source='job_settings')
+    vm_flavor = VMFlavorSerializer(read_only=True, source='job_flavor')
     class Meta:
         model = Job
         resource_name = 'jobs'
@@ -288,6 +299,8 @@ class JobAnswerSetSerializer(serializers.ModelSerializer):
 
 class JobQuestionnaireSerializer(serializers.ModelSerializer):
     tag = serializers.SerializerMethodField()
+    vm_flavor = serializers.IntegerField(source='job_flavor_id')
+    vm_settings = serializers.IntegerField(source='job_settings_id')
 
     def get_tag(self, obj):
         return obj.make_tag()
@@ -377,8 +390,10 @@ class AdminImportWorkflowQuestionnaireSerializer(serializers.Serializer):
     type_tag = serializers.CharField(min_length=1)
     methods_template_url = serializers.URLField()
     system_json = serializers.DictField()
-    vm_settings_name = serializers.CharField(min_length=1) # must relate to an existing VM Settings
-    vm_flavor_name = serializers.CharField(min_length=1) # must relate to an existing VM Flavor
+    vm_settings_name = serializers.CharField(min_length=1)  # must relate to an existing Job Settings
+                                                            # called vm_settings_name to maintain original api
+    vm_flavor_name = serializers.CharField(min_length=1)  # must relate to an existing Job Flavor
+                                                          # called vm_flavor_name to maintain original api
     share_group_name = serializers.CharField(min_length=1) # must relate to an existing Share Group
     volume_size_base = serializers.IntegerField()
     volume_size_factor = serializers.IntegerField()

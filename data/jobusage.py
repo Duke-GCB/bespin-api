@@ -70,4 +70,4 @@ class JobUsage(object):
         :param vm_hours: int: number VM hours used by job
         :return: int
         """
-        return vm_hours * self.job.vm_flavor.cpus
+        return vm_hours * self.job.job_flavor.cpus

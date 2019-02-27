@@ -1,7 +1,8 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
-from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, VMFlavor, VMProject, CloudSettings, \
-    VMSettings
+from data.models import Job, JobActivity, Workflow, WorkflowVersion, ShareGroup, JobFlavor, VMProject, \
+    CloudSettingsOpenStack, JobSettings
+from data.tests_models import create_vm_job_settings
 import datetime
 from unittest.mock import Mock, patch
 from data.jobusage import JobUsage
@@ -19,16 +20,14 @@ class JobUsageTests(TestCase):
         self.user = User.objects.create_user('test_user')
         self.sample_json = "{'type': 1}"
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.vm_flavor = VMFlavor.objects.create(name='flavor1')
-        vm_project = VMProject.objects.create(name='project1')
-        cloud_settings = CloudSettings.objects.create(vm_project=vm_project)
-        self.vm_settings = VMSettings.objects.create(cloud_settings=cloud_settings)
+        self.job_flavor = JobFlavor.objects.create(name='flavor1')
+        self.job_settings = create_vm_job_settings()
         self.job = Job.objects.create(workflow_version=self.workflow_version,
                                       user=self.user,
                                       job_order=self.sample_json,
                                       share_group=self.share_group,
-                                      vm_settings=self.vm_settings,
-                                      vm_flavor=self.vm_flavor)
+                                      job_settings=self.job_settings,
+                                      job_flavor=self.job_flavor)
 
     @staticmethod
     def created_ts(hr_min_str):
@@ -46,8 +45,8 @@ class JobUsageTests(TestCase):
             # override default auto_now_add behavior
             act.created = created
             act.save()
-        self.job.vm_flavor.cpus = num_cpus
-        self.job.vm_flavor.save()
+        self.job.job_flavor.cpus = num_cpus
+        self.job.job_flavor.save()
         acts = list(self.job.job_activities.all())
         return self.job
 

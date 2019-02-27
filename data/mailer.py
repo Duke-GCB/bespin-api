@@ -83,7 +83,7 @@ class JobMailer(object):
 
     def _deliver(self, message):
         if self.queue_messages:
-            client = MailerClient()
+            client = MailerClient(self.job.id)
             client.send(message.id)
         else:
             sender = EmailMessageSender(message)
@@ -121,13 +121,13 @@ class MailerConfig(object):
     """
     Settings for the AMQP queue we send messages to bespin-mailer over.
     """
-    def __init__(self):
-        self.work_queue_config = LandoConnection.objects.first()
+    def __init__(self, job_id):
+        self.work_queue_config = LandoConnection.get_for_job_id(job_id)
 
 
 class MailerClient(object):
-    def __init__(self):
-        self.config = MailerConfig()
+    def __init__(self, job_id):
+        self.config = MailerConfig(job_id)
 
     def send(self, send_email_id):
         work_queue_connection = WorkQueueConnection(self.config)

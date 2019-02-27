@@ -6,6 +6,7 @@ from django.test import TransactionTestCase
 from django.db.migrations.executor import MigrationExecutor
 from django.db import connection
 from django.core.management import call_command
+import json
 
 
 class TestMigrations(TransactionTestCase):
@@ -131,6 +132,7 @@ class JSONFieldMigrationTestCase(TestMigrations):
         VMProject = apps.get_model('data', 'VMProject')
         VMStrategy = apps.get_model('data', 'VMStrategy')
         WorkflowConfiguration = apps.get_model('data', 'WorkflowConfiguration')
+        LandoConnection = apps.get_model('data','LandoConnection')
 
         # create data using these models
         workflow = Workflow.objects.create(name='Copy Files', tag='copyfiles')
@@ -176,6 +178,8 @@ class JSONFieldMigrationTestCase(TestMigrations):
             system_job_order_json='',
             default_vm_strategy=vm_strategy,
             share_group=share_group)
+        # create lando connection that is needed by future migrations run during tearDown
+        LandoConnection.objects.create(host='somehost', username='someuser', password='somepass', queue_name='somequeue')
 
     def test_migrates_workflow_version_fields(self):
         WorkflowVersion = self.apps.get_model('data', 'WorkflowVersion')
@@ -191,3 +195,78 @@ class JSONFieldMigrationTestCase(TestMigrations):
         self.assertEqual(len(items), 2)
         self.assertEqual(items[0].system_job_order, {})
         self.assertEqual(items[1].system_job_order, {'color': 'blue', 'data': {'count': 3}})
+
+
+class JobRuntimeMigrationTestCase(TestMigrations):
+    migrate_from = '0083_new_models_for_k8s'
+    migrate_to = '0085_cleanup_moved_vm_fields'
+    django_application = 'data'
+
+    def setUpBeforeMigration(self, apps):
+        CloudSettings = apps.get_model('data', 'CloudSettings')
+        VMProject = apps.get_model('data', 'VMProject')
+        JobSettings = apps.get_model('data', 'JobSettings')
+        LandoConnection = apps.get_model('data', 'LandoConnection')
+
+        # create a lando connection that will be the default after the migration (the first connection)
+        LandoConnection.objects.create(
+            host='somehost',
+            username='lando',
+            password='secret',
+            queue_name='somequeue'
+        )
+
+        cloud_settings = CloudSettings.objects.create(
+            name='mycloud',
+            vm_project=VMProject.objects.create(name='someproject'),
+            ssh_key_name='somename',
+            network_name='somenetwork',
+        )
+        JobSettings.objects.create(
+            name='settings1',
+            cloud_settings=cloud_settings,
+            image_name='myimage1',
+            cwl_base_command=json.dumps(['cwltool']),
+            cwl_post_process_command=json.dumps(['cleanup']),
+            cwl_pre_process_command=json.dumps(['prep']),
+        )
+        JobSettings.objects.create(
+            name='settings2',
+            cloud_settings=cloud_settings,
+            image_name='myimage2',
+            cwl_base_command=json.dumps(['cwltool2']),
+            cwl_post_process_command=json.dumps(['cleanup2']),
+            cwl_pre_process_command=json.dumps(['prep2']),
+        )
+
+    def test_migrated_vm_settings_fields(self):
+        JobSettings = self.apps.get_model('data', 'JobSettings')
+        LandoConnection = self.apps.get_model('data', 'LandoConnection')
+        JobRuntimeOpenStack = self.apps.get_model('data', 'JobRuntimeOpenStack')
+
+        first_lando_connection = LandoConnection.objects.first()
+        job_settings = JobSettings.objects.order_by('name')
+        self.assertEqual(len(job_settings), 2)
+        self.assertEqual(job_settings[0].name, 'settings1')
+        self.assertEqual(job_settings[0].lando_connection, first_lando_connection)
+        self.assertEqual(job_settings[0].lando_connection.cluster_type, 'vm')
+        self.assertEqual(job_settings[0].job_runtime_openstack.image_name, 'myimage1')
+
+        self.assertEqual(job_settings[1].name, 'settings2')
+        self.assertEqual(job_settings[1].lando_connection, first_lando_connection)
+        self.assertEqual(job_settings[1].lando_connection.cluster_type, 'vm')
+        self.assertEqual(job_settings[1].job_runtime_openstack.image_name, 'myimage2')
+
+        job_runtimes = JobRuntimeOpenStack.objects.order_by('image_name')
+        self.assertEqual(len(job_runtimes), 2)
+        self.assertEqual(job_runtimes[0].image_name, 'myimage1')
+        self.assertEqual(job_runtimes[0].cloud_settings.name, 'mycloud')
+        self.assertEqual(job_runtimes[0].cwl_base_command, json.dumps(['cwltool']))
+        self.assertEqual(job_runtimes[0].cwl_post_process_command, json.dumps(['cleanup']))
+        self.assertEqual(job_runtimes[0].cwl_pre_process_command, json.dumps(['prep']))
+
+        self.assertEqual(job_runtimes[1].image_name, 'myimage2')
+        self.assertEqual(job_runtimes[1].cloud_settings.name, 'mycloud')
+        self.assertEqual(job_runtimes[1].cwl_base_command, json.dumps(['cwltool2']))
+        self.assertEqual(job_runtimes[1].cwl_post_process_command, json.dumps(['cleanup2']))
+        self.assertEqual(job_runtimes[1].cwl_pre_process_command, json.dumps(['prep2']))
