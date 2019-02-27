@@ -120,7 +120,7 @@ class AdminJobRuntimeOpenStack(serializers.ModelSerializer):
 
 
 class AdminJobRuntimeStepK8s(serializers.ModelSerializer):
-    job_flavor = JobFlavorSerializer(read_only=True)
+    flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = JobRuntimeStepK8s
         resource_name = 'job-runtime-step-k8s'
