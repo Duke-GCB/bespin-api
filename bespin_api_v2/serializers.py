@@ -3,11 +3,11 @@ from rest_framework import serializers, fields, permissions, viewsets
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
-    WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s
+    WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s, JobRuntimeStepK8s
 from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
-from data.serializers import AdminJobSerializer, JobFileStageGroupSerializer, AdminDDSUserCredSerializer, \
+from data.serializers import JobFileStageGroupSerializer, AdminDDSUserCredSerializer, \
     JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, JobDDSOutputProjectSerializer, UserSerializer
 
@@ -108,36 +108,47 @@ class ShareGroupSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class AdminVMCommand(serializers.ModelSerializer):
+class AdminJobRuntimeOpenStack(serializers.ModelSerializer):
     cwl_base_command = JSONStrField()
     cwl_post_process_command = JSONStrField()
     cwl_pre_process_command = JSONStrField()
     class Meta:
         model = JobRuntimeOpenStack
-        resource_name = 'vm-command'
+        resource_name = 'job-runtime-open-stack'
         fields = ('image_name', 'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command')
 
 
-class AdminJobSettingsSerializer(serializers.ModelSerializer):
-    vm_command = AdminVMCommand(read_only=True)
-    k8s_step_commands = serializers.SerializerMethodField()
+class AdminJobRuntimeStepK8s(serializers.ModelSerializer):
+    job_flavor = JobFlavorSerializer(read_only=True)
+    class Meta:
+        model = JobRuntimeStepK8s
+        resource_name = 'job-runtime-step-k8s'
+        fields = '__all__'
 
-    def get_k8s_step_commands(self, obj):
-        step_dict = {}
-        if obj.k8s_command_set:
-            for step in obj.k8s_command_set.step_commands.all():
-                step_dict[step.step_type] = {
-                    'image_name': step.image_name,
-                    'cpus': step.cpus,
-                    'memory': step.memory,
-                    'base_command': step.base_command,
-                }
-        return step_dict
+
+class AdminJobRuntimeK8s(serializers.ModelSerializer):
+    steps = AdminJobRuntimeStepK8s(many=True)
+    class Meta:
+        model = JobRuntimeK8s
+        resource_name = 'job-runtime-k8s'
+        fields = '__all__'
+
+
+class AdminLandoConnectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LandoConnection
+        resource_name = 'lando-connection'
+        fields = '__all__'
+
+
+class AdminJobSettingsSerializer(serializers.ModelSerializer):
+    job_runtime_openstack = AdminJobRuntimeOpenStack(read_only=True)
+    job_runtime_k8s = AdminJobRuntimeK8s(read_only=True)
 
     class Meta:
         model = JobSettings
         resource_name = 'job-settings'
-        fields = ('vm_command', 'k8s_step_commands')
+        fields = '__all__'
 
 
 class AdminJobSerializer(serializers.ModelSerializer):
