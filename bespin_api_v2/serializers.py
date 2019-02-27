@@ -57,7 +57,7 @@ class WorkflowConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkflowConfiguration
         resource_name = 'workflow-configuration'
-        fields = ('id', 'tag', 'workflow', 'system_job_order', 'default_job_strategy', 'share_group', )
+        fields = '__all__'
 
 
 class JobFlavorSerializer(serializers.ModelSerializer):
@@ -72,7 +72,7 @@ class JobStrategySerializer(serializers.ModelSerializer):
     class Meta:
         model = JobStrategy
         resource_name = 'job-strategies'
-        fields = ['id', 'name', 'job_settings', 'job_flavor', 'volume_size_base', 'volume_size_factor', 'volume_mounts']
+        fields = '__all__'
 
 
 class JobTemplateMinimalSerializer(serializers.Serializer):
