@@ -33,9 +33,9 @@ def create_vm_job_runtime(vm_project=None, cloud_name='cloud'):
     return JobRuntimeOpenStack.objects.create(
         cloud_settings=cloud_settings,
         image_name='someimage',
-        cwl_base_command='[]',
-        cwl_post_process_command='[]',
-        cwl_pre_process_command='[]',
+        cwl_base_command='["cwltool"]',
+        cwl_post_process_command='["cleanup.sh"]',
+        cwl_pre_process_command='["prep.sh"]',
     )
 
 

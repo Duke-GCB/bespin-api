@@ -5,7 +5,7 @@ from rest_framework import status
 from data.tests_api import UserLogin
 from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
     JobSettings, CloudSettingsOpenStack, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job, \
-    JobRuntimeK8s, LandoConnection
+    JobRuntimeK8s, LandoConnection, JobRuntimeStepK8s
 from data.tests_models import create_vm_job_settings
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -761,8 +761,25 @@ class JobsTestCase(APITestCase):
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
-        self.job_flavor = JobFlavor.objects.create(name='flavor1')
-        self.job_settings = create_vm_job_settings()
+        self.job_flavor = JobFlavor.objects.create(name='flavor1', cpus=32, memory='12Gi')
+        self.vm_job_settings = create_vm_job_settings(name='vm')
+        job_runtime_k8s = JobRuntimeK8s.objects.create()
+        job_runtime_k8s.steps = [
+            JobRuntimeStepK8s.objects.create(
+                step_type=JobRuntimeStepK8s.STAGE_DATA_STEP,
+                flavor=self.job_flavor,
+                image_name='myimage',
+                base_command=['download.py']
+            )
+        ]
+        lando_connection = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost', username='jpb67',
+            password='secret', queue_name='lando')
+        self.k8s_job_settings = JobSettings.objects.create(
+            name='k8s',
+            lando_connection=lando_connection,
+            job_runtime_k8s=job_runtime_k8s)
 
     def test_jobs_list_shows_job_settings(self):
         admin_user = self.user_login.become_admin_user()
@@ -771,14 +788,58 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=admin_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-job-list') + '{}/'.format(job.id)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['job_settings'], self.job_settings.id)
+        self.assertEqual(response.data['job_settings'], self.vm_job_settings.id)
         self.assertNotIn('vm_settings', response.data)
+
+    def test_admin_jobs_list_shows_vm_job_settings(self):
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['job_settings']['name'], 'vm')
+        self.assertEqual(response.data['job_settings']['job_runtime_k8s'], None)
+        job_runtime_openstack = response.data['job_settings']['job_runtime_openstack']
+        self.assertEqual(job_runtime_openstack['image_name'], 'someimage')
+        self.assertEqual(job_runtime_openstack['cwl_base_command'], ['cwltool'])
+        self.assertEqual(job_runtime_openstack['cwl_post_process_command'], ['cleanup.sh'])
+        self.assertEqual(job_runtime_openstack['cwl_pre_process_command'], ['prep.sh'])
+
+    def test_admin_jobs_list_shows_k8s_job_settings(self):
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.k8s_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['job_settings']['name'], 'k8s')
+        self.assertEqual(response.data['job_settings']['job_runtime_openstack'], None)
+        job_runtime_k8s_steps = response.data['job_settings']['job_runtime_k8s']['steps']
+        self.assertEqual(len(job_runtime_k8s_steps), 1)
+        self.assertEqual(job_runtime_k8s_steps[0]['step_type'], JobRuntimeStepK8s.STAGE_DATA_STEP)
+        self.assertEqual(job_runtime_k8s_steps[0]['image_name'], 'myimage')
+        self.assertEqual(job_runtime_k8s_steps[0]['base_command'],['download.py'])
+        self.assertEqual(job_runtime_k8s_steps[0]['flavor']['cpus'], 32)
+        self.assertEqual(job_runtime_k8s_steps[0]['flavor']['memory'], '12Gi')
 
     def testAdminSeeAllData(self):
         normal_user = self.user_login.become_normal_user()
@@ -787,7 +848,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=normal_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         # normal user can't see admin endpoint
@@ -801,7 +862,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=other_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         # admin user can see both via admin endpoint
@@ -828,7 +889,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=normal_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         response = self.client.get(url, format='json')
@@ -851,7 +912,7 @@ class JobsTestCase(APITestCase):
                            job_order={},
                            user=admin_user,
                            share_group=self.share_group,
-                           job_settings=self.job_settings,
+                           job_settings=self.vm_job_settings,
                            job_flavor=self.job_flavor,
                            )
         Job.objects.create(name='somejob2',
@@ -860,7 +921,7 @@ class JobsTestCase(APITestCase):
                            job_order={},
                            user=admin_user,
                            share_group=self.share_group,
-                           job_settings=self.job_settings,
+                           job_settings=self.vm_job_settings,
                            job_flavor=self.job_flavor,
                            )
         url = reverse('v2-admin_job-list') + '?vm_instance_name=vm_job_1'
@@ -876,7 +937,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=admin_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
@@ -904,7 +965,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=normal_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
@@ -926,7 +987,7 @@ class JobsTestCase(APITestCase):
                                  job_order={},
                                  user=admin_user,
                                  share_group=self.share_group,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
@@ -954,7 +1015,7 @@ class JobsTestCase(APITestCase):
                                  user=admin_user,
                                  share_group=self.share_group,
                                  state=Job.JOB_STATE_AUTHORIZED,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
@@ -981,7 +1042,7 @@ class JobsTestCase(APITestCase):
                                  share_group=self.share_group,
                                  state=Job.JOB_STATE_RUNNING,
                                  step=Job.JOB_STEP_CREATE_VM,
-                                 job_settings=self.job_settings,
+                                 job_settings=self.vm_job_settings,
                                  job_flavor=self.job_flavor,
                                  )
         url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
