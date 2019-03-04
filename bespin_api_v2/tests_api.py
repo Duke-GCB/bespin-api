@@ -817,6 +817,8 @@ class JobsTestCase(APITestCase):
         self.assertEqual(job_runtime_openstack['cwl_base_command'], ['cwltool'])
         self.assertEqual(job_runtime_openstack['cwl_post_process_command'], ['cleanup.sh'])
         self.assertEqual(job_runtime_openstack['cwl_pre_process_command'], ['prep.sh'])
+        self.assertEqual(job_runtime_openstack['cloud_settings']['name'], 'cloud')
+        self.assertEqual(job_runtime_openstack['cloud_settings']['vm_project']['name'], 'project1')
 
     def test_admin_jobs_list_shows_k8s_job_settings(self):
         admin_user = self.user_login.become_admin_user()
