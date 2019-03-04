@@ -26,6 +26,8 @@ router.register(r'admin/job-errors', api.AdminJobErrorViewSet, 'v2-admin_joberro
 router.register(r'admin/job-dds-output-projects', api.AdminJobDDSOutputProjectViewSet, 'v2-admin_jobddsoutputproject')
 router.register(r'admin/share-groups', api.AdminShareGroupViewSet, 'v2-admin_sharegroup')
 router.register(r'admin/workflow-methods-documents', api.WorkflowMethodsDocumentViewSet, 'v2-admin_workflowmethodsdocument')
+router.register(r'admin/email-templates', api.AdminEmailTemplateViewSet, 'v2-admin_emailtemplate')
+router.register(r'admin/email-messages', api.AdminEmailMessageViewSet, 'v2-admin_emailmessage')
 
 urlpatterns = [
     url(r'^', include(router.urls)),

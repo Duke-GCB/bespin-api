@@ -8,13 +8,13 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     WorkflowConfigurationSerializer, JobTemplateMinimalSerializer, JobTemplateSerializer, WorkflowVersionSerializer, \
     ShareGroupSerializer, JobTemplateValidatingSerializer, AdminJobSerializer, JobFileStageGroupSerializer, \
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
-    WorkflowMethodsDocumentSerializer, JobSerializer
+    WorkflowMethodsDocumentSerializer, JobSerializer, AdminEmailMessageSerializer, AdminEmailTemplateSerializer
 from gcb_web_auth.models import DDSUserCredential
 from data.api import JobsViewSet as V1JobsViewSet
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
-    Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument
+    Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, EmailMessage, EmailTemplate
 from data.exceptions import BespinAPIException
-from data.mailer import JobMailer
+from data.mailer import EmailMessageSender, JobMailer
 
 
 class CreateListRetrieveModelViewSet(mixins.CreateModelMixin,
@@ -162,3 +162,26 @@ class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
 
 class JobsViewSet(V1JobsViewSet):
     serializer_class = JobSerializer
+
+
+class AdminEmailMessageViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = AdminEmailMessageSerializer
+    queryset = EmailMessage.objects.all()
+
+    @detail_route(methods=['post'], url_path='send')
+    def send(self, request, pk=None):
+        """
+        Send an email message
+        """
+        message = self.get_object()
+        sender = EmailMessageSender(message)
+        sender.send()
+        serializer = self.get_serializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AdminEmailTemplateViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = AdminEmailTemplateSerializer
+    queryset = EmailTemplate.objects.all()

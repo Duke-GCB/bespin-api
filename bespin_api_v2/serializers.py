@@ -3,7 +3,8 @@ from rest_framework import serializers, fields, permissions, viewsets
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
-    WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s, JobRuntimeStepK8s
+    WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s, JobRuntimeStepK8s, \
+    EmailTemplate, EmailMessage
 from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -206,3 +207,17 @@ class JobSerializer(serializers.ModelSerializer):
                   'job_settings', 'vm_instance_name', 'vm_volume_name', 'job_order',
                   'output_project', 'job_errors', 'stage_group', 'volume_size', 'fund_code', 'share_group',
                   'run_token', 'usage')
+
+
+class AdminEmailTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailTemplate
+        resource_name = 'email-templates'
+        fields = '__all__'
+
+
+class AdminEmailMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailMessage
+        resource_name = 'email-messages'
+        fields = '__all__'
