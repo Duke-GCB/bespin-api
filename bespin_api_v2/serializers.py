@@ -9,7 +9,7 @@ from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration,
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
 from data.serializers import JobFileStageGroupSerializer, AdminDDSUserCredSerializer, \
     JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
-    WorkflowMethodsDocumentSerializer, JobDDSOutputProjectSerializer, UserSerializer
+    WorkflowMethodsDocumentSerializer, JobDDSOutputProjectSerializer, UserSerializer, AdminCloudSettingsSerializer
 from data.jobusage import JobUsage
 
 
@@ -113,10 +113,12 @@ class AdminJobRuntimeOpenStack(serializers.ModelSerializer):
     cwl_base_command = JSONStrField()
     cwl_post_process_command = JSONStrField()
     cwl_pre_process_command = JSONStrField()
+    cloud_settings = AdminCloudSettingsSerializer(read_only=True, required=False)
     class Meta:
         model = JobRuntimeOpenStack
         resource_name = 'job-runtime-open-stack'
-        fields = ('image_name', 'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command')
+        fields = ('image_name', 'cwl_base_command', 'cwl_post_process_command', 'cwl_pre_process_command',
+                  'cloud_settings', )
 
 
 class AdminJobRuntimeStepK8s(serializers.ModelSerializer):
