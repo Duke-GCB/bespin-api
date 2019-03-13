@@ -43,7 +43,7 @@ class JobTemplateTestCase(TestCase):
             {"type": "int", "name": "myint"},
             {"type": "string", "name": "mystr"},
             {"type": {"type": "array",  "items": "int"}, "name": "intary"},
-            {"name": "interval_padding", "type": [ "null", "int"]},
+            {"name": "interval_padding", "type": ["null", "int"]},
             {"name": "two_d_ary", "type": {"type": "array", "items": {"type": "array", "items": "int"}}},
         ]
         job_template = JobTemplate(tag="exome/v1/human", job_order={})
@@ -238,7 +238,9 @@ class JobTemplateValidatorTestCase(TestCase):
 
     @patch('bespin_api_v2.jobtemplate.WorkflowVersionConfiguration')
     def test_run_check_job_order_values(self, mock_workflow_version_configuration):
-        mock_workflow_version_configuration.return_value.user_job_fields.return_value = [{"name":"bad_field"}]
+        mock_workflow_version_configuration.return_value.user_job_fields.return_value = [
+            {"name": "bad_field", "type": "string"}
+        ]
         validator = JobTemplateValidator({
             'tag': 'exome/v1/human',
             'name': 'myjob',
@@ -252,6 +254,22 @@ class JobTemplateValidatorTestCase(TestCase):
         self.assertEqual(raised_exception.exception.detail, {
             'job_order.bad_field': [REQUIRED_ERROR_MESSAGE]
         })
+
+    @patch('bespin_api_v2.jobtemplate.WorkflowVersionConfiguration')
+    def test_run_check_job_order_optional_type(self, mock_workflow_version_configuration):
+        mock_workflow_version_configuration.return_value.user_job_fields.return_value = [
+            {"name": "threads", "type": "int"},
+            {"name": "interval_padding", "type": ["null", "int"]},
+        ]
+        validator = JobTemplateValidator({
+            'tag': 'exome/v1/human',
+            'name': 'myjob',
+            'fund_code': '001',
+            'job_order': {
+                'threads': 12
+            }
+        })
+        validator.run()
 
     def test_is_placeholder_value(self):
         self.assertEqual(JobTemplateValidator.is_placeholder_value("<String Value>"), True)
@@ -377,7 +395,7 @@ class JobOrderValuesCheckTestCase(TestCase):
             'job_order.missing_field': [REQUIRED_ERROR_MESSAGE],
         }
 
-        checker = JobOrderValuesCheck(user_job_fields=[{'name': 'missing_field'}])
+        checker = JobOrderValuesCheck(user_job_fields=[{'name': 'missing_field', 'type': 'int'}])
         checker.walk(job_order)
 
         self.assertEqual(checker.errors, expected_keys)

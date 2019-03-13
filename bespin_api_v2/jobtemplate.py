@@ -215,14 +215,21 @@ class JobOrderWalker(object):
 
 class JobOrderValuesCheck(JobOrderWalker):
     def __init__(self, user_job_fields):
-        self.user_job_keys = [field['name'] for field in user_job_fields]
+        self.user_job_fields = user_job_fields
         self.errors = {}
 
     def walk(self, obj):
-        for required_key in self.user_job_keys:
-            if not required_key in obj:
-                self._on_bad_value(required_key, REQUIRED_ERROR_MESSAGE)
+        for job_field in self.user_job_fields:
+            field_name = job_field['name']
+            field_type = job_field['type']
+            if self.is_required_type(field_type) and not field_name in obj:
+                    self._on_bad_value(field_name, REQUIRED_ERROR_MESSAGE)
         super(JobOrderValuesCheck, self).walk(obj)
+
+    def is_required_type(self, field_type):
+        if isinstance(field_type, list) and field_type[0] == "null":
+            return False
+        return True
 
     def on_class_value(self, top_level_key, value):
         if value['class'] == 'File':
