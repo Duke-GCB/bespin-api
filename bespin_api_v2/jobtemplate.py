@@ -216,7 +216,6 @@ class JobOrderWalker(object):
 class JobOrderValuesCheck(JobOrderWalker):
     def __init__(self, user_job_fields):
         self.user_job_fields = user_job_fields
-        #self.user_job_keys = [field['name'] for field in user_job_fields]
         self.errors = {}
 
     def walk(self, obj):
