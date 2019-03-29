@@ -100,7 +100,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         workflow_version = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='1.0.1',
             url='',
             fields=[{"name":"threads", "class": "int"}],
         )
@@ -112,7 +112,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         self.assertEqual(response.data[0]['id'], workflow_version.id)
         self.assertEqual(response.data[0]['workflow'], self.workflow.id)
         self.assertEqual(response.data[0]['description'], 'v1 exomeseq')
-        self.assertEqual(response.data[0]['version'], 1)
+        self.assertEqual(response.data[0]['version'], '1.0.1')
         self.assertEqual(response.data[0]['fields'], [{"name": "threads", "class": "int"}])
 
     def test_retrieve_with_admin_user(self):
@@ -138,7 +138,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         response = self.client.post(url, format='json', data={
             'workflow': self.workflow.id,
             'description': 'v1 exomseq',
-            'version': 2,
+            'version': '2.0.1',
             'url': 'https://someurl.com',
             'fields': [{"name":"threads", "class": "int"}],
 
@@ -148,7 +148,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         self.assertEqual(response.data['enable_ui'], False)
         workflow_versions = WorkflowVersion.objects.all()
         self.assertEqual(len(workflow_versions), 1)
-        self.assertEqual(workflow_versions[0].version, 2)
+        self.assertEqual(workflow_versions[0].version, '2.0.1')
         self.assertEqual(workflow_versions[0].fields, [{"name": "threads", "class": "int"}])
 
     def test_put_fails_with_admin_user(self):

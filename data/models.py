@@ -48,7 +48,6 @@ class WorkflowVersion(models.Model):
                                     help_text="Should this workflow version be enabled in the web portal.")
 
     class Meta:
-        ordering = ['version']
         unique_together = ('workflow', 'version',)
 
     def __str__(self):
