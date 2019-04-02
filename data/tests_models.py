@@ -17,6 +17,7 @@ import json
 from mock import patch
 
 CWL_URL = 'https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl'
+ZIP_URL = 'https://github.com/bespin-workflows/exomeseq-gatk3/archive/v1.0.0.zip'
 
 
 def create_vm_lando_connection():
@@ -133,13 +134,25 @@ class WorkflowVersionTests(TestCase):
         workflow_version = WorkflowVersion.objects.first()
         self.assertEqual(workflow_version.enable_ui, False)
 
-    def test_default_workflow_path(self):
+    def test_default_workflow_type(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
                                        version='1',
                                        url=CWL_URL,
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
-        self.assertEqual('#main', workflow_version.workflow_path)
+        self.assertEqual(WorkflowVersion.PackedType, workflow_version.type)
+        self.assertEqual('', workflow_version.workflow_path)
+
+    def test_create_with_zip_type(self):
+        WorkflowVersion.objects.create(workflow=self.workflow,
+                                       version='1',
+                                       type=WorkflowVersion.ZippedType,
+                                       url=ZIP_URL,
+                                       workflow_path='exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl',
+                                       fields=[])
+        workflow_version = WorkflowVersion.objects.first()
+        self.assertEqual(WorkflowVersion.ZippedType, workflow_version.type)
+        self.assertEqual('exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl', workflow_version.workflow_path)
 
     def test_create_with_description(self):
         desc = """This is a detailed description of the job."""
