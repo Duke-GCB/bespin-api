@@ -16,7 +16,7 @@ class LandoJobTests(TestCase):
                                                             dds_id='5432')
         self.workflow = Workflow.objects.create(name='RnaSeq')
         workflow_version = WorkflowVersion.objects.create(workflow=self.workflow,
-                                                          object_name='#main',
+                                                          workflow_path='#main',
                                                           version='1',
                                                           url='',
                                                           fields=[])
