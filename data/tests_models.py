@@ -112,16 +112,17 @@ class WorkflowVersionTests(TestCase):
     def test_basic_functionality(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
                                        object_name='#main',
-                                       version='1',
+                                       version='4.2.1',
                                        url=CWL_URL,
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
         self.assertEqual(self.workflow, workflow_version.workflow)
         self.assertEqual('#main', workflow_version.object_name)
-        self.assertEqual(1, workflow_version.version)
+        self.assertEqual('4.2.1', workflow_version.version)
         self.assertEqual(CWL_URL, workflow_version.url)
         self.assertIsNotNone(workflow_version.created)
         self.assertEqual(workflow_version.enable_ui, True)
+        self.assertEqual(workflow_version.version_info_url, None)
 
     def test_create_disable_ui(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
@@ -152,17 +153,14 @@ class WorkflowVersionTests(TestCase):
         with self.assertRaises(IntegrityError):
             WorkflowVersion.objects.create(workflow=self.workflow, description="two", version=1)
 
-    def test_sorted_by_version_num(self):
-        WorkflowVersion.objects.create(workflow=self.workflow, description="two", version=2, fields=[])
-        a_workflow_version = WorkflowVersion.objects.create(workflow=self.workflow, description="one", version=1,
-                                                            fields=[])
-        WorkflowVersion.objects.create(workflow=self.workflow, description="three", version=3, fields=[])
-        versions = [wv.version for wv in WorkflowVersion.objects.all()]
-        self.assertEqual([1, 2, 3], versions)
-        a_workflow_version.version = 4
-        a_workflow_version.save()
-        versions = [wv.version for wv in WorkflowVersion.objects.all()]
-        self.assertEqual([2, 3, 4], versions)
+    def test_version_info_url(self):
+        WorkflowVersion.objects.create(workflow=self.workflow,
+                                       version='1',
+                                       version_info_url='https://github.com',
+                                       url=CWL_URL,
+                                       fields=[])
+        wv = WorkflowVersion.objects.first()
+        self.assertEqual(wv.version_info_url, 'https://github.com')
 
 
 class JobTests(TestCase):
