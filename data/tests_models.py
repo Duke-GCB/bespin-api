@@ -122,6 +122,7 @@ class WorkflowVersionTests(TestCase):
         self.assertEqual(CWL_URL, workflow_version.url)
         self.assertIsNotNone(workflow_version.created)
         self.assertEqual(workflow_version.enable_ui, True)
+        self.assertEqual(workflow_version.version_info_url, None)
 
     def test_create_disable_ui(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
@@ -151,6 +152,16 @@ class WorkflowVersionTests(TestCase):
         WorkflowVersion.objects.create(workflow=self.workflow, description="one", version=1, fields=[])
         with self.assertRaises(IntegrityError):
             WorkflowVersion.objects.create(workflow=self.workflow, description="two", version=1)
+
+    def test_version_info_url(self):
+        WorkflowVersion.objects.create(workflow=self.workflow,
+                                       version='1',
+                                       version_info_url='https://github.com',
+                                       url=CWL_URL,
+                                       fields=[])
+        wv = WorkflowVersion.objects.first()
+        self.assertEqual(wv.version_info_url, 'https://github.com')
+
 
 class JobTests(TestCase):
     def setUp(self):
