@@ -3,13 +3,13 @@ from rest_framework.exceptions import ValidationError
 from bespin_api_v2.jobtemplate import WorkflowVersionConfiguration, JobTemplate, InvalidWorkflowTagException, \
     JobOrderWalker, JobOrderValuesCheck, JobTemplateValidator, STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     FILE_PLACEHOLDER, REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
-from mock import patch, ANY, Mock, call
+from unittest.mock import patch, ANY, Mock, call
 
 
 class WorkflowVersionConfigurationTestCase(TestCase):
     def test_split_workflow_tag_parts(self):
-        self.assertEqual(WorkflowVersionConfiguration.split_workflow_tag_parts("exome/v1/human"), ('exome', 1, 'human'))
-        self.assertEqual(WorkflowVersionConfiguration.split_workflow_tag_parts("exome/v2/mouse"), ('exome', 2, 'mouse'))
+        self.assertEqual(WorkflowVersionConfiguration.split_workflow_tag_parts("exome/v1.0.0/human"), ('exome', 'v1.0.0', 'human'))
+        self.assertEqual(WorkflowVersionConfiguration.split_workflow_tag_parts("exome/dev/mouse"), ('exome', 'dev', 'mouse'))
         for invalid_tag in ["", "exome", "exome/v1/human/other"]:
             with self.assertRaises(InvalidWorkflowTagException):
                 WorkflowVersionConfiguration.split_workflow_tag_parts(invalid_tag)
@@ -19,7 +19,7 @@ class WorkflowVersionConfigurationTestCase(TestCase):
     def test_constructor(self, mock_workflow_configuration, mock_workflow_version):
         item = WorkflowVersionConfiguration("exome/v1/human")
         mock_workflow_configuration.objects.get.assert_called_with(tag='human', workflow=ANY)
-        mock_workflow_version.objects.get.assert_called_with(version=1, workflow__tag='exome')
+        mock_workflow_version.objects.get.assert_called_with(version='v1', workflow__tag='exome')
         self.assertEqual(item.workflow_version, mock_workflow_version.objects.get.return_value)
         self.assertEqual(item.workflow_configuration, mock_workflow_configuration.objects.get.return_value)
 
