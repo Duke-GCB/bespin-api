@@ -122,7 +122,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         workflow_version = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='v1',
             url='',
             fields=[{"name":"threads", "class": "int"}],
         )
@@ -195,7 +195,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         self.workflow_version = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='1',
             url='',
             fields=[{"name": "threads", "class": "int"}]
         )
@@ -373,14 +373,14 @@ class WorkflowConfigurationViewSetTestCase(APITestCase):
         self.workflow_version = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='1',
             url='',
             fields=[{"name":"threads", "type": "int"},{"name":"items", "type": "int"}],
         )
         self.workflow_version2 = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v2 exomeseq',
-            version=2,
+            version='2',
             url='',
             fields=[{"name":"threads", "type": "int"}],
         )
@@ -519,7 +519,7 @@ class JobTemplatesViewSetTestCase(APITestCase):
         self.workflow_version = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='v1',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
         )
@@ -730,7 +730,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version1 = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version=1,
+            version='v1',
             version_info_url='https://github.com/bespin-workflows/gatk/blob/1/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -738,7 +738,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version2 = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v2 exomeseq',
-            version=2,
+            version='v2',
             version_info_url='https://github.com/bespin-workflows/gatk/blob/2/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -747,7 +747,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version3 = WorkflowVersion.objects.create(
             workflow=self.workflow2,
             description='v1 other',
-            version=1,
+            version='v1',
             version_info_url='https://github.com/bespin-workflows/gatk2/blob/1/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -797,7 +797,7 @@ class JobsTestCase(APITestCase):
         workflow = Workflow.objects.create(name='RnaSeq')
         cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                               version="1",
+                                                               version="v1",
                                                                url=cwl_url,
                                                                fields=[])
         self.share_group = ShareGroup.objects.create(name='Results Checkers')
