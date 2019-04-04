@@ -5,7 +5,7 @@ from data.models import *
 class CreateOnlyWorkflowVersionAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return self.readonly_fields + ('workflow', 'workflow_path', 'type' 'version', 'url')
+            return self.readonly_fields + ('workflow', 'workflow_path', 'type', 'version', 'url')
         return self.readonly_fields
 
     def has_delete_permission(self, request, obj=None):
