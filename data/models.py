@@ -48,14 +48,14 @@ class WorkflowVersion(models.Model):
                                                "(e.g. exomeseq-gatk4-2.0.0/exomeseq-gatk4.cwl) or for packed workflows, "
                                                "the name of the object to run (e.g. '#main')")
     created = models.DateTimeField(auto_now_add=True)
-    version = models.IntegerField()
+    version = models.CharField(max_length=255)
+    version_info_url = models.URLField(help_text="URL to documentation about this workflow version.", null=True)
     url = models.URLField(help_text="URL to workflow file.")
     fields = JSONField(help_text="Array of fields required by this workflow.")
     enable_ui = models.BooleanField(default=True,
                                     help_text="Should this workflow version be enabled in the web portal.")
 
     class Meta:
-        ordering = ['version']
         unique_together = ('workflow', 'version',)
 
     def __str__(self):
