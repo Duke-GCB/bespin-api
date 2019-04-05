@@ -5,6 +5,8 @@ from django.contrib.postgres.fields import JSONField
 from gcb_web_auth.models import DDSUserCredential, DDSEndpoint
 import json
 
+WORKFLOW_VERSION_PART_SORT_DIGITS = 10
+
 
 class DDSUser(models.Model):
     """
@@ -65,11 +67,8 @@ class WorkflowVersion(models.Model):
     def sort_workflow_then_version_key(workflow_version):
         parts = [workflow_version.workflow.id]
         for part in workflow_version.version.split("."):
-            try:
-                int_part = int(part)
-                parts.append(int_part)
-            except ValueError:
-                parts.append(part)
+            left_padded_part = part.zfill(WORKFLOW_VERSION_PART_SORT_DIGITS)
+            parts.extend(left_padded_part)
         return parts
 
 
