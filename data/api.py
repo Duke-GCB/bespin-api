@@ -75,7 +75,15 @@ class WorkflowsViewSet(viewsets.ReadOnlyModelViewSet):
     filter_fields = ('tag',)
 
 
-class WorkflowVersionsViewSet(viewsets.ReadOnlyModelViewSet):
+class WorkflowVersionSortedListMixin(object):
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        items = sorted(queryset, key=WorkflowVersion.sort_workflow_then_version_key)
+        serializer = self.get_serializer(items, many=True)
+        return Response(serializer.data)
+
+
+class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = WorkflowVersion.objects.all()
     serializer_class = WorkflowVersionSerializer

@@ -61,6 +61,17 @@ class WorkflowVersion(models.Model):
     def __str__(self):
         return "WorkflowVersion - pk: {} workflow.pk: {}, version: {}".format(self.pk, self.workflow.pk, self.version,)
 
+    @staticmethod
+    def sort_workflow_then_version_key(workflow_version):
+        parts = [workflow_version.workflow.id]
+        for part in workflow_version.version.split("."):
+            try:
+                int_part = int(part)
+                parts.append(int_part)
+            except ValueError:
+                parts.append(part)
+        return parts
+
 
 class WorkflowMethodsDocument(models.Model):
     """
