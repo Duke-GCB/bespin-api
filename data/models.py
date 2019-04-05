@@ -34,15 +34,23 @@ class WorkflowVersion(models.Model):
     """
     Specific version of a Workflow.
     """
+    PackedType = 'packed'
+    ZippedType = 'zipped'
+    WorkflowTypes = [
+        (PackedType, 'Single-file packed CWL Workflow'),
+        (ZippedType, 'Zip archive containing CWL workflow and dependencies'),
+    ]
     workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name='versions')
     description = models.TextField()
-    object_name = models.CharField(max_length=255, blank=True, default='#main',
-                                   help_text="Name of the object in a packed workflow to run. "
-                                             "Typically set to '#main'.")
+    type = models.CharField(max_length=255, choices=WorkflowTypes, default=PackedType)
+    workflow_path = models.CharField(max_length=255, blank=True,
+                                     help_text="Path to the workflow file after extracting the archive "
+                                               "(e.g. exomeseq-gatk4-2.0.0/exomeseq-gatk4.cwl) or for packed workflows, "
+                                               "the name of the object to run (e.g. '#main')")
     created = models.DateTimeField(auto_now_add=True)
     version = models.CharField(max_length=255)
     version_info_url = models.URLField(help_text="URL to documentation about this workflow version.", null=True)
-    url = models.URLField(help_text="URL to packed CWL workflow file.")
+    url = models.URLField(help_text="URL to workflow file.")
     fields = JSONField(help_text="Array of fields required by this workflow.")
     enable_ui = models.BooleanField(default=True,
                                     help_text="Should this workflow version be enabled in the web portal.")

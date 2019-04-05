@@ -46,9 +46,9 @@ PLACEHOLDER_ERROR_MESSAGE = 'This field contains a placeholder value.'
 
 class WorkflowVersionConfiguration(object):
     def __init__(self, tag):
-        workflow_tag, version_num, configuration_name = self.split_workflow_tag_parts(tag)
+        workflow_tag, version_str, configuration_name = self.split_workflow_tag_parts(tag)
         self.workflow_version = WorkflowVersion.objects.get(
-            version=version_num,
+            version=version_str,
             workflow__tag=workflow_tag)
         self.workflow_configuration = WorkflowConfiguration.objects.get(
             workflow=self.workflow_version.workflow,
@@ -59,14 +59,13 @@ class WorkflowVersionConfiguration(object):
         """
         Based on our tag return tuple of base_workflow_tag, version_num, configuration_name
         :param tag: str: tag to split into parts
-        :return: (workflow_tag, version_num, configuration_name)
+        :return: (workflow_tag, version_str, configuration_name)
         """
         parts = tag.split("/")
         if len(parts) != 3:
             raise InvalidWorkflowTagException("Invalid workflow tag {}".format(tag))
-        workflow_tag, version_num_str, configuration_name = parts
-        version_num = int(version_num_str.replace("v", ""))
-        return workflow_tag, version_num, configuration_name
+        workflow_tag, version_str, configuration_name = parts
+        return workflow_tag, version_str, configuration_name
 
     def user_job_fields(self):
         system_keys = self.workflow_configuration.system_job_order.keys()

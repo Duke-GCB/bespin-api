@@ -21,7 +21,7 @@ class JobFactoryTests(TestCase):
         self.worker_cred = DDSUserCredential.objects.create(user=self.user, token='abc123', endpoint=self.endpoint)
         workflow = Workflow.objects.create(name='RnaSeq')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                               object_name='#main',
+                                                               workflow_path='#main',
                                                                version='1',
                                                                url=FLY_RNASEQ_URL,
                                                                fields=[])

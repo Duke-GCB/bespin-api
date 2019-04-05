@@ -25,7 +25,7 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkflowVersion
         resource_name = 'workflow-versions'
-        fields = ('id', 'workflow', 'name', 'description', 'object_name', 'created', 'url', 'version',
+        fields = ('id', 'workflow', 'name', 'description', 'type', 'workflow_path', 'created', 'url', 'version',
                   'methods_document', 'fields', 'questionnaires', 'enable_ui', )
 
 

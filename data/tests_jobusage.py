@@ -13,7 +13,7 @@ class JobUsageTests(TestCase):
     def setUp(self):
         workflow = Workflow.objects.create(name='RnaSeq')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                               object_name='#main',
+                                                               workflow_path='#main',
                                                                version='1',
                                                                url='someurl',
                                                                fields=[])

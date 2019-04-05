@@ -33,7 +33,7 @@ class AdminWorkflowVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkflowVersion
         resource_name = 'workflowversions'
-        fields = ['id', 'workflow', 'description', 'object_name', 'created', 'version', 'version_info_url', 'url',
+        fields = ['id', 'workflow', 'description', 'type', 'workflow_path', 'created', 'version', 'version_info_url', 'url',
                   'fields', 'enable_ui']
         read_only_fields = ('enable_ui', )
 
@@ -46,12 +46,12 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
         return obj.workflow.name
 
     def get_tag(self, obj):
-        return "{}/v{}".format(obj.workflow.tag, obj.version)
+        return "{}/{}".format(obj.workflow.tag, obj.version)
 
     class Meta:
         model = WorkflowVersion
         resource_name = 'workflow-versions'
-        fields = ('id', 'workflow', 'name', 'description', 'object_name', 'created', 'url', 'version',
+        fields = ('id', 'workflow', 'name', 'description', 'type', 'workflow_path', 'created', 'url', 'version',
                   'version_info_url', 'methods_document', 'fields', 'tag', 'enable_ui')
 
 

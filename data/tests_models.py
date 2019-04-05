@@ -17,6 +17,7 @@ import json
 from mock import patch
 
 CWL_URL = 'https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl'
+ZIP_URL = 'https://github.com/bespin-workflows/exomeseq-gatk3/archive/v1.0.0.zip'
 
 
 def create_vm_lando_connection():
@@ -111,13 +112,13 @@ class WorkflowVersionTests(TestCase):
 
     def test_basic_functionality(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
-                                       object_name='#main',
+                                       workflow_path='#main',
                                        version='4.2.1',
                                        url=CWL_URL,
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
         self.assertEqual(self.workflow, workflow_version.workflow)
-        self.assertEqual('#main', workflow_version.object_name)
+        self.assertEqual('#main', workflow_version.workflow_path)
         self.assertEqual('4.2.1', workflow_version.version)
         self.assertEqual(CWL_URL, workflow_version.url)
         self.assertIsNotNone(workflow_version.created)
@@ -126,7 +127,7 @@ class WorkflowVersionTests(TestCase):
 
     def test_create_disable_ui(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
-                                       object_name='#main',
+                                       workflow_path='#main',
                                        version='1',
                                        url=CWL_URL,
                                        fields=[],
@@ -134,13 +135,25 @@ class WorkflowVersionTests(TestCase):
         workflow_version = WorkflowVersion.objects.first()
         self.assertEqual(workflow_version.enable_ui, False)
 
-    def test_default_object_name(self):
+    def test_default_workflow_type(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
                                        version='1',
                                        url=CWL_URL,
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
-        self.assertEqual('#main', workflow_version.object_name)
+        self.assertEqual(WorkflowVersion.PackedType, workflow_version.type)
+        self.assertEqual('', workflow_version.workflow_path)
+
+    def test_create_with_zip_type(self):
+        WorkflowVersion.objects.create(workflow=self.workflow,
+                                       version='1',
+                                       type=WorkflowVersion.ZippedType,
+                                       url=ZIP_URL,
+                                       workflow_path='exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl',
+                                       fields=[])
+        workflow_version = WorkflowVersion.objects.first()
+        self.assertEqual(WorkflowVersion.ZippedType, workflow_version.type)
+        self.assertEqual('exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl', workflow_version.workflow_path)
 
     def test_create_with_description(self):
         desc = """This is a detailed description of the job."""
@@ -167,7 +180,7 @@ class JobTests(TestCase):
     def setUp(self):
         workflow = Workflow.objects.create(name='RnaSeq')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                               object_name='#main',
+                                                               workflow_path='#main',
                                                                version='1',
                                                                url=CWL_URL,
                                                                fields=[])
@@ -260,7 +273,7 @@ class JobTests(TestCase):
         obj.user_credentials = DDSUserCredential.objects.create(user=obj.user, token='abc123', endpoint=obj.endpoint)
         workflow = Workflow.objects.create(name='RnaSeq')
         obj.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                              object_name='#main',
+                                                              workflow_path='#main',
                                                               version='1',
                                                               url=CWL_URL,
                                                               fields=[])
@@ -634,7 +647,7 @@ class JobQuestionnaireTests(TestCase):
         obj.user = User.objects.create_user('user')
         obj.workflow = Workflow.objects.create(name='RnaSeq', tag='rna-seq')
         obj.workflow_version = WorkflowVersion.objects.create(workflow=obj.workflow,
-                                                              object_name='#main',
+                                                              workflow_path='#main',
                                                               version='1',
                                                               url=CWL_URL,
                                                               fields=[])
@@ -821,7 +834,7 @@ class WorkflowMethodsDocumentTests(TestCase):
     def setUp(self):
         workflow = Workflow.objects.create(name='RnaSeq')
         self.workflow_version = WorkflowVersion.objects.create(workflow=workflow,
-                                                               object_name='#main',
+                                                               workflow_path='#main',
                                                                version='1',
                                                                url=CWL_URL,
                                                                fields=[])
