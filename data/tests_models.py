@@ -157,14 +157,14 @@ class WorkflowVersionTests(TestCase):
 
     def test_create_with_description(self):
         desc = """This is a detailed description of the job."""
-        WorkflowVersion.objects.create(workflow=self.workflow, description=desc, version=1, fields=[])
+        WorkflowVersion.objects.create(workflow=self.workflow, description=desc, version='1', fields=[])
         wv = WorkflowVersion.objects.first()
         self.assertEqual(desc, wv.description)
 
     def test_version_num_and_workflow_are_unique(self):
-        WorkflowVersion.objects.create(workflow=self.workflow, description="one", version=1, fields=[])
+        WorkflowVersion.objects.create(workflow=self.workflow, description="one", version='1', fields=[])
         with self.assertRaises(IntegrityError):
-            WorkflowVersion.objects.create(workflow=self.workflow, description="two", version=1)
+            WorkflowVersion.objects.create(workflow=self.workflow, description="two", version='1')
 
     def test_version_info_url(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
@@ -174,6 +174,17 @@ class WorkflowVersionTests(TestCase):
                                        fields=[])
         wv = WorkflowVersion.objects.first()
         self.assertEqual(wv.version_info_url, 'https://github.com')
+
+    def test_sort_workflow_then_version_key(self):
+        wf = WorkflowVersion.objects.create(workflow=self.workflow, description="one", version='1', fields=[])
+        self.assertEqual(WorkflowVersion.sort_workflow_then_version_key(wf),
+                         [self.workflow.id, '0000000001'])
+        wf.version = '1.2.3'
+        self.assertEqual(WorkflowVersion.sort_workflow_then_version_key(wf),
+                         [self.workflow.id, '0000000001', '0000000002', '0000000003'])
+        wf.version = '1.0.5-alpha'
+        self.assertEqual(WorkflowVersion.sort_workflow_then_version_key(wf),
+                         [self.workflow.id, '0000000001', '0000000000', '0000000005', '00000alpha'])
 
 
 class JobTests(TestCase):
