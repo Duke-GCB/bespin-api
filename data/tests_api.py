@@ -17,6 +17,7 @@ from data.tests_models import create_vm_job_settings
 from rest_framework.authtoken.models import Token
 from data.exceptions import WrappedDataServiceException
 from data.util import DDSResource
+from data.api import WorkflowVersionSortedListMixin
 
 
 class UserLogin(object):
@@ -286,6 +287,21 @@ class WorkflowTestCase(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['name'], 'workflow2')
 
+    def testWorkflowVersionsAreSorted(self):
+        wf = Workflow.objects.create(name='workflow1', tag='one')
+        wfv_1 = WorkflowVersion.objects.create(workflow=wf, version="1", url='', fields=[])
+        wfv_2_4_5 = WorkflowVersion.objects.create(workflow=wf, version="2.4.5", url='', fields=[])
+        wfv_2_2_2_dev = WorkflowVersion.objects.create(workflow=wf, version="2.2.2-dev", url='', fields=[])
+        wfv_1_3_1 = WorkflowVersion.objects.create(workflow=wf, version="1.3.1", url='', fields=[])
+        wfv_1_0_0 = WorkflowVersion.objects.create(workflow=wf, version="1.0.0", url='', fields=[])
+        self.user_login.become_normal_user()
+        url = reverse('workflow-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['versions'],
+                         [wfv_1.id, wfv_1_0_0.id, wfv_1_3_1.id, wfv_2_2_2_dev.id, wfv_2_4_5.id])
+
 
 class WorkflowVersionTestCase(APITestCase):
     def setUp(self):
@@ -376,6 +392,27 @@ class WorkflowVersionTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['enable_ui'], False)
+
+    def testSortedByWorkflowAndVersion(self):
+        wf1 = Workflow.objects.create(name='workflow1', tag='one')
+        wfv_1 = WorkflowVersion.objects.create(workflow=wf1, version="1", url='', fields=[])
+        wfv_2_2_2_dev = WorkflowVersion.objects.create(workflow=wf1, version="2.2.2-dev", url='', fields=[])
+        wfv_1_3_1 = WorkflowVersion.objects.create(workflow=wf1, version="1.3.1", url='', fields=[])
+        wf2 = Workflow.objects.create(name='workflow2', tag='two')
+        wfv_5 = WorkflowVersion.objects.create(workflow=wf2, version="5", url='', fields=[])
+
+        self.user_login.become_normal_user()
+        url = reverse('workflowversion-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
+        workflow_versions_ary = [(item['workflow'], item['version']) for item in response.data]
+        self.assertEqual(workflow_versions_ary, [
+            (wf1.id, '1'),
+            (wf1.id, '1.3.1'),
+            (wf1.id, '2.2.2-dev'),
+            (wf2.id, '5'),
+        ])
 
 
 def add_job_settings(obj, project_name='project1',

@@ -9,6 +9,12 @@ from rest_framework.authtoken.models import Token
 
 
 class WorkflowSerializer(serializers.ModelSerializer):
+    versions = serializers.SerializerMethodField()
+
+    def get_versions(self, obj):
+        sorted_versions = sorted(obj.versions.all(), key=WorkflowVersion.sort_workflow_then_version_key)
+        return [version.id for version in sorted_versions]
+
     class Meta:
         model = Workflow
         resource_name = 'workflows'

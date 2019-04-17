@@ -10,7 +10,7 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, JobSerializer, AdminEmailMessageSerializer, AdminEmailTemplateSerializer
 from gcb_web_auth.models import DDSUserCredential
-from data.api import JobsViewSet as V1JobsViewSet
+from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
     Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, EmailMessage, EmailTemplate
 from data.exceptions import BespinAPIException
@@ -30,7 +30,7 @@ class AdminWorkflowViewSet(CreateListRetrieveModelViewSet):
     queryset = Workflow.objects.all()
 
 
-class AdminWorkflowVersionViewSet(CreateListRetrieveModelViewSet):
+class AdminWorkflowVersionViewSet(WorkflowVersionSortedListMixin, CreateListRetrieveModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = AdminWorkflowVersionSerializer
     queryset = WorkflowVersion.objects.all()
@@ -53,9 +53,9 @@ class JobStrategyViewSet(viewsets.ReadOnlyModelViewSet):
     filter_fields = ('name',)
 
 
-class WorkflowVersionsViewSet(viewsets.ReadOnlyModelViewSet):
+class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = WorkflowVersion.objects.order_by('workflow', 'version')
+    queryset = WorkflowVersion.objects.all()
     serializer_class = WorkflowVersionSerializer
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('workflow', 'workflow__tag')

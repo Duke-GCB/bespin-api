@@ -4,6 +4,9 @@ from django.core.exceptions import ValidationError
 from django.contrib.postgres.fields import JSONField
 from gcb_web_auth.models import DDSUserCredential, DDSEndpoint
 import json
+import re
+
+WORKFLOW_VERSION_PART_SORT_DIGITS = 10
 
 
 class DDSUser(models.Model):
@@ -60,6 +63,14 @@ class WorkflowVersion(models.Model):
 
     def __str__(self):
         return "WorkflowVersion - pk: {} workflow.pk: {}, version: {}".format(self.pk, self.workflow.pk, self.version,)
+
+    @staticmethod
+    def sort_workflow_then_version_key(workflow_version):
+        parts = [workflow_version.workflow.id]
+        for part in re.split("\.|\-", workflow_version.version):
+            left_padded_part = part.zfill(WORKFLOW_VERSION_PART_SORT_DIGITS)
+            parts.append(left_padded_part)
+        return parts
 
 
 class WorkflowMethodsDocument(models.Model):

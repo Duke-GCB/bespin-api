@@ -187,6 +187,27 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def testSortedByWorkflowAndVersion(self):
+        wf1 = Workflow.objects.create(name='workflow1', tag='one')
+        wfv_1 = WorkflowVersion.objects.create(workflow=wf1, version="1", url='', fields=[])
+        wfv_2_2_2_dev = WorkflowVersion.objects.create(workflow=wf1, version="2.2.2-dev", url='', fields=[])
+        wfv_1_3_1 = WorkflowVersion.objects.create(workflow=wf1, version="1.3.1", url='', fields=[])
+        wf2 = Workflow.objects.create(name='workflow2', tag='two')
+        wfv_5 = WorkflowVersion.objects.create(workflow=wf2, version="5", url='', fields=[])
+
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_workflowversion-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 4)
+        workflow_versions_ary = [(item['workflow'], item['version']) for item in response.data]
+        self.assertEqual(workflow_versions_ary, [
+            (wf1.id, '1'),
+            (wf1.id, '1.3.1'),
+            (wf1.id, '2.2.2-dev'),
+            (wf2.id, '5'),
+        ])
+
 
 class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
     def setUp(self):
@@ -730,7 +751,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version1 = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
-            version='v1',
+            version='1.0.1',
             version_info_url='https://github.com/bespin-workflows/gatk/blob/1/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -738,7 +759,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version2 = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v2 exomeseq',
-            version='v2',
+            version='2.3.1',
             version_info_url='https://github.com/bespin-workflows/gatk/blob/2/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -747,7 +768,7 @@ class WorkflowVersionsViewSet(APITestCase):
         self.workflow_version3 = WorkflowVersion.objects.create(
             workflow=self.workflow2,
             description='v1 other',
-            version='v1',
+            version='1.0.0-dev',
             version_info_url='https://github.com/bespin-workflows/gatk2/blob/1/CHANGELOG.md',
             url='',
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
@@ -788,6 +809,19 @@ class WorkflowVersionsViewSet(APITestCase):
             'https://github.com/bespin-workflows/gatk/blob/1/CHANGELOG.md',
             'https://github.com/bespin-workflows/gatk/blob/2/CHANGELOG.md',
             'https://github.com/bespin-workflows/gatk2/blob/1/CHANGELOG.md',
+        ])
+
+    def testSortedByWorkflowAndVersion(self):
+        self.user_login.become_normal_user()
+        url = reverse('v2-workflowversion-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        workflow_versions_ary = [(item['workflow'], item['version']) for item in response.data]
+        self.assertEqual(workflow_versions_ary, [
+            (self.workflow.id, '1.0.1'),
+            (self.workflow.id, '2.3.1'),
+            (self.workflow2.id, '1.0.0-dev'),
         ])
 
 
