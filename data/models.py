@@ -62,7 +62,7 @@ class WorkflowVersion(models.Model):
         unique_together = ('workflow', 'version',)
 
     def __str__(self):
-        return "WorkflowVersion - pk: {} workflow.pk: {}, version: {}".format(self.pk, self.workflow.pk, self.version,)
+        return "WorkflowVersion - pk: {} workflow.pk: {} - {}/{}: {}".format(self.pk, self.workflow.pk,  self.workflow.tag, self.version, self.description)
 
     @staticmethod
     def sort_workflow_then_version_key(workflow_version):
