@@ -76,6 +76,10 @@ class WorkflowsViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class WorkflowVersionSortedListMixin(object):
+    """
+    Overrides list method and returns a list that is sorted using WorkflowVersion.sort_workflow_then_version_key.
+    NOTE: This removes DRF pagination support.
+    """
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         items = sorted(queryset, key=WorkflowVersion.sort_workflow_then_version_key)
