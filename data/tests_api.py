@@ -303,6 +303,43 @@ class WorkflowTestCase(APITestCase):
                          [wfv_1.id, wfv_1_0_0.id, wfv_1_3_1.id, wfv_2_2_2_dev.id, wfv_2_4_5.id])
 
 
+class WorkflowStateTestCase(APITestCase):
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        self.user_login.become_normal_user()
+        self.active_wf = Workflow.objects.create(name='active', tag='active-tag', state=Workflow.WORKFLOW_STATE_ACTIVE)
+        self.deprecated_wf = Workflow.objects.create(name='deprecated', tag='deprecated-tag', state=Workflow.WORKFLOW_STATE_DEPRECATED)
+
+    def test_excludes_deprecated(self):
+        self.assertEqual(Workflow.objects.count(), 2)
+        url = reverse('workflow-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'active')
+
+    def test_includes_deprecated_when_filtering(self):
+        self.assertEqual(Workflow.objects.count(), 2)
+        url = reverse('workflow-list') + "?state=D"
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'deprecated')
+        self.assertEqual(response.data[0]['id'], self.deprecated_wf.id)
+
+    def test_filters_on_state(self):
+        self.assertEqual(Workflow.objects.count(), 2)
+        url = reverse('workflow-list') + "?state=A"
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'active')
+        self.assertEqual(response.data[0]['id'], self.active_wf.id)
+
+    def test_can_get_deprecated_by_id(self):
+        detail_url = reverse('workflow-detail', args=[self.deprecated_wf.id])
+        detail_response = self.client.get(detail_url, format='json')
+        self.assertEqual(detail_response.data['name'], 'deprecated')
+
+
 class WorkflowVersionTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
@@ -413,6 +450,49 @@ class WorkflowVersionTestCase(APITestCase):
             (wf1.id, '2.2.2-dev'),
             (wf2.id, '5'),
         ])
+
+
+class WorkflowVersionWorkflowStateTestCase(APITestCase):
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        self.user_login.become_normal_user()
+        self.active_wf = Workflow.objects.create(name='active', tag='active-tag',
+                                                 state=Workflow.WORKFLOW_STATE_ACTIVE)
+        self.active_version = WorkflowVersion.objects.create(workflow=self.active_wf,
+                                                             version="active-version", url='', fields=[])
+        self.deprecated_wf = Workflow.objects.create(name='deprecated', tag='deprecated-tag',
+                                                     state=Workflow.WORKFLOW_STATE_DEPRECATED)
+        self.deprecated_version = WorkflowVersion.objects.create(workflow=self.deprecated_wf,
+                                                                  version="deprecated-version", url='', fields=[])
+
+    def test_excludes_deprecated(self):
+        self.assertEqual(WorkflowVersion.objects.count(), 2)
+        url = reverse('workflowversion-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['version'], 'active-version')
+
+    def test_includes_deprecated_when_filtering(self):
+        self.assertEqual(WorkflowVersion.objects.count(), 2)
+        url = reverse('workflowversion-list') + "?workflow__state=D"
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['version'], 'deprecated-version')
+        self.assertEqual(response.data[0]['id'], self.deprecated_version.id)
+
+    def test_filters_on_workflow_state(self):
+        self.assertEqual(WorkflowVersion.objects.count(), 2)
+        url = reverse('workflowversion-list') + "?workflow__state=A"
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['version'], 'active-version')
+        self.assertEqual(response.data[0]['id'], self.active_version.id)
+
+    def test_can_get_deprecated_by_id(self):
+        detail_url = reverse('workflowversion-detail', args=[self.deprecated_version.id])
+        detail_response = self.client.get(detail_url, format='json')
+        self.assertEqual(detail_response.data['version'], 'deprecated-version')
 
 
 def add_job_settings(obj, project_name='project1',
