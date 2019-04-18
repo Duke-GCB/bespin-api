@@ -67,12 +67,45 @@ class DDSResourcesViewSet(DDSViewSet):
             raise BespinAPIException(400, 'Getting dds-resources requires either a project_id or folder_id query parameter')
 
 
-class WorkflowsViewSet(viewsets.ReadOnlyModelViewSet):
+class ExcludeDeprecatedWorkflowsMixin(object):
+    """
+    Mixin to dynamically build a queryset that excludes deprecated workflows from the listing
+
+    If the exclude() filter is always applied to the queryset, then there's no way to list or access deprecated
+    workflows through the API. They are simply invisible. Instead, we exclude them from the queryset by default, but
+    include them ahead of other filtering or for specific request id.
+    """
+
+    state_filter_field = None
+
+    def get_queryset(self):
+        """
+        Exclude deprecated workflows from queryset, unless request is
+        filtering on state or fetching a single workflow by id
+        :return: Workflows queryset
+        """
+        if self.state_filter_field not in self.filter_fields:
+            raise(BespinAPIException(500, 'Cannot use ExcludeDeprecatedWorkflowsMixin without setting '
+                                          'state_filter_field to one of the filter_fields: {}'
+                                     .format(self.state_filter_field)))
+        queryset = self.queryset
+        if not queryset:
+            raise(BespinAPIException(500, 'Cannot use ExcludeDeprecatedWorkflowsMixin without setting '
+                                          'queryset'))
+        state_query = self.request.query_params.get(self.state_filter_field, None)
+        if state_query is None and self.action == 'list':
+            exclude_filter = {self.state_filter_field: Workflow.WORKFLOW_STATE_DEPRECATED}
+            queryset = queryset.exclude(**exclude_filter)
+        return queryset
+
+
+class WorkflowsViewSet(ExcludeDeprecatedWorkflowsMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = Workflow.objects.all()
     serializer_class = WorkflowSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('tag',)
+    filter_fields = ('tag','state', )
+    state_filter_field = 'state'
 
 
 class WorkflowVersionSortedListMixin(object):
@@ -87,12 +120,13 @@ class WorkflowVersionSortedListMixin(object):
         return Response(serializer.data)
 
 
-class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, viewsets.ReadOnlyModelViewSet):
+class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = WorkflowVersion.objects.all()
     serializer_class = WorkflowVersionSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('workflow', 'enable_ui', )
+    filter_fields = ('workflow', 'enable_ui', 'workflow__state')
+    state_filter_field = 'workflow__state'
 
 
 class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):

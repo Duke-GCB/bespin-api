@@ -18,7 +18,7 @@ class WorkflowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workflow
         resource_name = 'workflows'
-        fields = ('id', 'name', 'versions', 'tag')
+        fields = ('id', 'name', 'versions', 'tag', 'state',)
         read_only_fields = ('versions',)
 
 

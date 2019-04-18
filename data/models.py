@@ -39,7 +39,7 @@ class Workflow(models.Model):
                              help_text="State of the workflow")
 
     def __str__(self):
-        return "Workflow - pk: {} name: '{}', tag: '{}'".format(self.pk, self.name, self.tag,)
+        return "Workflow - pk: {} name: '{}', state: {}, tag: '{}'".format(self.pk, self.name, self.get_state_display(), self.tag,)
 
 
 class WorkflowVersion(models.Model):
