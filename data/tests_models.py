@@ -141,18 +141,18 @@ class WorkflowVersionTests(TestCase):
                                        url=CWL_URL,
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
-        self.assertEqual(WorkflowVersion.PackedType, workflow_version.type)
+        self.assertEqual(WorkflowVersion.PACKED_TYPE, workflow_version.type)
         self.assertEqual('', workflow_version.workflow_path)
 
     def test_create_with_zip_type(self):
         WorkflowVersion.objects.create(workflow=self.workflow,
                                        version='1',
-                                       type=WorkflowVersion.ZippedType,
+                                       type=WorkflowVersion.ZIPPED_TYPE,
                                        url=ZIP_URL,
                                        workflow_path='exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl',
                                        fields=[])
         workflow_version = WorkflowVersion.objects.first()
-        self.assertEqual(WorkflowVersion.ZippedType, workflow_version.type)
+        self.assertEqual(WorkflowVersion.ZIPPED_TYPE, workflow_version.type)
         self.assertEqual('exomeseq-gatk3-1.0.0/exomeseq-gatk3.cwl', workflow_version.workflow_path)
 
     def test_create_with_description(self):

@@ -26,8 +26,17 @@ class Workflow(models.Model):
     """
     Name of a workflow that will apply some processing to some data.
     """
+    WORKFLOW_STATE_ACTIVE = 'A'
+    WORKFLOW_STATE_DEPRECATED = 'D'
+    WORKFLOW_STATES = (
+        (WORKFLOW_STATE_ACTIVE, 'Active'),
+        (WORKFLOW_STATE_DEPRECATED, 'Deprecated'),
+    )
+
     name = models.CharField(max_length=255)
     tag = models.SlugField(help_text="Unique tag to represent this workflow", unique=True)
+    state = models.CharField(max_length=1, choices=WORKFLOW_STATES, default=WORKFLOW_STATE_ACTIVE,
+                             help_text="State of the workflow")
 
     def __str__(self):
         return "Workflow - pk: {} name: '{}', tag: '{}'".format(self.pk, self.name, self.tag,)
@@ -37,15 +46,15 @@ class WorkflowVersion(models.Model):
     """
     Specific version of a Workflow.
     """
-    PackedType = 'packed'
-    ZippedType = 'zipped'
-    WorkflowTypes = [
-        (PackedType, 'Single-file packed CWL Workflow'),
-        (ZippedType, 'Zip archive containing CWL workflow and dependencies'),
+    PACKED_TYPE = 'packed'
+    ZIPPED_TYPE = 'zipped'
+    WORKFLOW_TYPES = [
+        (PACKED_TYPE, 'Single-file packed CWL Workflow'),
+        (ZIPPED_TYPE, 'Zip archive containing CWL workflow and dependencies'),
     ]
     workflow = models.ForeignKey(Workflow, on_delete=models.CASCADE, related_name='versions')
     description = models.TextField()
-    type = models.CharField(max_length=255, choices=WorkflowTypes, default=PackedType)
+    type = models.CharField(max_length=255, choices=WORKFLOW_TYPES, default=PACKED_TYPE)
     workflow_path = models.CharField(max_length=255, blank=True,
                                      help_text="Path to the workflow file after extracting the archive "
                                                "(e.g. exomeseq-gatk4-2.0.0/exomeseq-gatk4.cwl) or for packed workflows, "
