@@ -88,8 +88,8 @@ class ExcludeDeprecatedWorkflowsMixin(object):
             raise(BespinAPIException(500, 'Cannot use ExcludeDeprecatedWorkflowsMixin without setting '
                                           'state_filter_field to one of the filter_fields: {}'
                                      .format(self.state_filter_field)))
-        queryset = self.queryset
-        if not queryset:
+        queryset = super(ExcludeDeprecatedWorkflowsMixin, self).get_queryset()
+        if queryset is None:
             raise(BespinAPIException(500, 'Cannot use ExcludeDeprecatedWorkflowsMixin without setting '
                                           'queryset'))
         state_query = self.request.query_params.get(self.state_filter_field, None)
