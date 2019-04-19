@@ -10,7 +10,7 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, JobSerializer, AdminEmailMessageSerializer, AdminEmailTemplateSerializer
 from gcb_web_auth.models import DDSUserCredential
-from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin
+from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
     Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, EmailMessage, EmailTemplate
 from data.exceptions import BespinAPIException
@@ -53,12 +53,13 @@ class JobStrategyViewSet(viewsets.ReadOnlyModelViewSet):
     filter_fields = ('name',)
 
 
-class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, viewsets.ReadOnlyModelViewSet):
+class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin, viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = WorkflowVersion.objects.all()
     serializer_class = WorkflowVersionSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('workflow', 'workflow__tag')
+    filter_fields = ('workflow', 'workflow__tag', 'workflow__state')
+    state_filter_field = 'workflow__state'
 
 
 class WorkflowConfigurationViewSet(viewsets.ReadOnlyModelViewSet):
