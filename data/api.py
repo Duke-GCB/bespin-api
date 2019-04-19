@@ -89,9 +89,6 @@ class ExcludeDeprecatedWorkflowsMixin(object):
                                           'state_filter_field to one of the filter_fields: {}'
                                      .format(self.state_filter_field)))
         queryset = super(ExcludeDeprecatedWorkflowsMixin, self).get_queryset()
-        if queryset is None:
-            raise(BespinAPIException(500, 'Cannot use ExcludeDeprecatedWorkflowsMixin without setting '
-                                          'queryset'))
         state_query = self.request.query_params.get(self.state_filter_field, None)
         if state_query is None and self.action == 'list':
             exclude_filter = {self.state_filter_field: Workflow.WORKFLOW_STATE_DEPRECATED}
