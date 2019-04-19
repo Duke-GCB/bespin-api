@@ -8,7 +8,7 @@ dj-database-url==0.4.2
 drf-ember-backend==1.1
 DukeDSClient==2.1.4
 funcsigs==1.0.2
-gcb-web-auth==1.0.1
+gcb-web-auth==1.1.1
 habanero==0.5.0
 inflection==0.3.1
 Jinja2==2.10.1

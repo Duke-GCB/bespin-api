@@ -5,7 +5,7 @@ from ddsc.core.remotestore import RemoteStore
 from ddsc.core.ddsapi import DataServiceError
 from ddsc.core.ddsapi import ContentType
 from ddsc.config import Config
-from gcb_web_auth.utils import get_oauth_token, get_dds_token_from_oauth
+from gcb_web_auth.utils import get_oauth_token, get_dds_token_from_oauth, get_default_dds_endpoint
 import requests
 
 
@@ -90,7 +90,7 @@ def get_dds_config(user):
         user_cred = DDSUserCredential.objects.get(user=user)
         config = get_dds_config_for_credentials(user_cred)
     except ObjectDoesNotExist:
-        endpoint_cred = DDSEndpoint.objects.first()
+        endpoint_cred = get_default_dds_endpoint()
         config = create_config_for_endpoint(endpoint_cred)
         oauth_token = get_oauth_token(user)
         user_auth_token = _get_dds_auth_token(endpoint_cred, oauth_token)
