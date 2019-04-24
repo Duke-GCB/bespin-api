@@ -268,3 +268,21 @@ def give_download_permissions(user, project_id, target_dds_user_id):
         data_service.set_user_project_permission(project_id, target_dds_user_id, auth_role='file_downloader')
     except DataServiceError as dse:
         raise WrappedDataServiceException(dse)
+
+
+def get_workflow_version_info(workflow_version):
+    """
+    Fetch the version_info_url from a WorkflowVersion, returning a dictionary with the fetched data and content type
+    :param workflow_version: A WorkflowVersion
+    :return: dict with contents and content_type
+    """
+    response = requests.get(workflow_version.version_info_url)
+    response.raise_for_status()
+    content = response.content.decode(response.encoding)
+    content_type = response.headers.get('Content-Type')
+    return {
+        'workflow_version': workflow_version,
+        'content': content,
+        'content_type': content_type,
+        'url': workflow_version.version_info_url
+    }

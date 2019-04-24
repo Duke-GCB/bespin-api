@@ -32,7 +32,17 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
         model = WorkflowVersion
         resource_name = 'workflow-versions'
         fields = ('id', 'workflow', 'name', 'description', 'type', 'workflow_path', 'created', 'url', 'version',
-                  'methods_document', 'fields', 'questionnaires', 'enable_ui', )
+                  'version_info_url', 'methods_document', 'fields', 'questionnaires', 'enable_ui', )
+
+
+class WorkflowVersionInfoContentsSerializer(serializers.Serializer):
+    workflow_version = serializers.PrimaryKeyRelatedField(read_only=True)
+    url = serializers.URLField()
+    content = serializers.CharField()
+    content_type = serializers.CharField()
+
+    class Meta:
+        resource_name = 'workflow-version-info-contents'
 
 
 class WorkflowMethodsDocumentSerializer(serializers.ModelSerializer):
