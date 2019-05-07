@@ -12,6 +12,89 @@ from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEH
 from mock import patch, Mock
 
 
+class AdminCreateListRetrieveMixin(object):
+    """
+    Many of our Admin models are CreateListRetrieveModelViewSet subclasses, therefore
+    most of the API tests follow the same pattern. This base class provides test for the standard behaviors
+    """
+
+    # Override these variables and methods in implementation
+    BASE_NAME = None # Name of the base_view from urls, e.g. 'v2-workflowversiontooldetails'
+    MODEL_CLS = None # Name of the model class
+
+    def create_model_object(self):
+        raise NotImplemented('Override create_model_object to use this base class')
+
+    def check_single_response(self):
+        raise NotImplemented('Override check_single_response to use this base class')
+
+    def check_list_response(self):
+        raise NotImplemented('Override check_list_response to use this base class')
+
+    def build_post_data(self):
+        raise NotImplemented('Override build_post_data to use this base class')
+
+    # Do not override
+    def list_url(self):
+        return reverse('{}-list'.format(self.BASE_NAME))
+
+    def object_url(self, pk):
+        return '{}{}/'.format(self.list_url(), pk)
+
+    def get_model_object(self, pk):
+        return self.MODEL_CLS.objects.get(pk=pk)
+
+    # Test methods
+
+    def test_list_fails_unauthenticated(self):
+        self.user_login.become_unauthorized()
+        url = self.list_url()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_list_fails_not_admin_user(self):
+        self.user_login.become_normal_user()
+        url = self.list_url()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_list_with_admin_user(self):
+        model_object = self.create_model_object()
+        self.user_login.become_admin_user()
+        url = self.list_url()
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_list_response(model_object, response.data)
+
+    def test_retrieve_with_admin_user(self):
+        model_object = self.create_model_object()
+        self.user_login.become_admin_user()
+        url = self.object_url(model_object.id)
+        response = self.client.get(url ,format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.check_single_response(model_object, response.data)
+
+    def test_create_with_admin_user(self):
+        self.user_login.become_admin_user()
+        url = self.list_url()
+        response = self.client.post(url, format='json', data=self.build_post_data())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        model_object = self.get_model_object(response.data['id'])
+        self.check_single_response(model_object, response.data)
+
+    def test_put_fails_with_admin_user(self):
+        self.user_login.become_admin_user()
+        url = self.object_url(1)
+        response = self.client.put(url, format='json', data={})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_delete_fails_with_admin_user(self):
+        self.user_login.become_admin_user()
+        url = self.object_url(2)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 class AdminWorkflowViewSetTestCase(APITestCase):
     def setUp(self):
         self.user_login = UserLogin(self.client)
@@ -315,89 +398,7 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class AdminCreateListRetrieveBase(APITestCase):
-    """
-    Many of our Admin models are CreateListRetrieveModelViewSet subclasses, therefore
-    most of the API tests follow the same pattern. This base class provides test for the standard behavior
-    """
-
-    BASE_NAME = None
-    MODEL_CLS = None
-
-    def list_url(self):
-        return reverse('{}-list'.format(self.BASE_NAME))
-
-    def object_url(self, pk):
-        return '{}{}/'.format(self.list_url(), pk)
-
-    def get_model_object(self, pk):
-        return self.MODEL_CLS.objects.get(pk=pk)
-
-    # Override these next
-
-    def create_model_object(self):
-        raise NotImplemented('Override create_model_object to use this base class')
-
-    def check_single_response(self):
-        raise NotImplemented('Override check_single_response to use this base class')
-
-    def check_list_response(self):
-        raise NotImplemented('Override check_list_response to use this base class')
-
-    def build_post_data(self):
-        raise NotImplemented('Override build_post_data to use this base class')
-
-    # These are the tests that will test the standard behavior
-    def test_list_fails_unauthenticated(self):
-        self.user_login.become_unauthorized()
-        url = self.list_url()
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_list_fails_not_admin_user(self):
-        self.user_login.become_normal_user()
-        url = self.list_url()
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_list_with_admin_user(self):
-        model_object = self.create_model_object()
-        self.user_login.become_admin_user()
-        url = self.list_url()
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.check_list_response(model_object, response.data)
-
-    def test_retrieve_with_admin_user(self):
-        model_object = self.create_model_object()
-        self.user_login.become_admin_user()
-        url = self.object_url(model_object.id)
-        response = self.client.get(url ,format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.check_single_response(model_object, response.data)
-
-    def test_create_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = self.list_url()
-        response = self.client.post(url, format='json', data=self.build_post_data())
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        model_object = self.get_model_object(response.data['id'])
-        self.check_single_response(model_object, response.data)
-
-    def test_put_fails_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = self.object_url(1)
-        response = self.client.put(url, format='json', data={})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def test_delete_fails_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = self.object_url(2)
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
-class AdminWorkflowVersionToolDetailsViewSetTestCase(AdminCreateListRetrieveBase):
+class AdminWorkflowVersionToolDetailsViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
 
     BASE_NAME = 'v2-workflowversiontooldetails'
     MODEL_CLS = WorkflowVersionToolDetails
