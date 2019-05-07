@@ -172,6 +172,12 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMi
         self.workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
         self.version_change_log = 'https://github.com/bespin-workflows/exomeseq-gatk3/blob/release-4.1/CHANGELOG.md'
 
+    def test_list_url(self):
+        self.assertEqual(self.list_url(), '/api/v2/admin/workflow-versions/')
+
+    def test_object_url(self):
+        self.assertEqual(self.object_url(3), '/api/v2/admin/workflow-versions/3/')
+
     def create_model_object(self):
         model_object = WorkflowVersion.objects.create(
             workflow=self.workflow,
