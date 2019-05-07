@@ -11,7 +11,7 @@ import datetime
 from data.models import Workflow, WorkflowVersion, Job, JobFileStageGroup, JobError, \
     DDSUserCredential, DDSEndpoint, DDSJobInputFile, URLJobInputFile, JobDDSOutputProject, \
     JobQuestionnaire, JobAnswerSet, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, \
-    WorkflowMethodsDocument, EmailMessage, EmailTemplate, JobSettings, \
+    WorkflowMethodsDocument, WorkflowVersionToolDetails, EmailMessage, EmailTemplate, JobSettings, \
     JobQuestionnaireType
 from data.tests_models import create_vm_job_settings
 from rest_framework.authtoken.models import Token
@@ -1998,6 +1998,33 @@ class WorkflowMethodsDocumentTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(1, len(response.data))
         self.assertEqual('#One', response.data[0]['content'])
+
+
+class WorkflowVersionToolDetailsViewSetTestCase(APITestCase):
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        workflow1 = Workflow.objects.create(name='RnaSeq')
+        cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
+        self.workflow_version = WorkflowVersion.objects.create(workflow=workflow1, version="1", url=cwl_url,fields=[])
+        self.tool_details = WorkflowVersionToolDetails.objects.create(
+            workflow_version=self.workflow_version,
+            details=['one','two','three']
+        )
+
+    def test_cannot_write(self):
+        self.user_login.become_normal_user()
+        url = reverse('workflowversiontooldetails-list')
+        response = self.client.post(url, format='json', data={})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_read_only_access(self):
+        self.user_login.become_normal_user()
+        url = reverse('workflowversiontooldetails-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(1, len(response.data))
+        self.assertEqual(self.tool_details.id, response.data[0]['id'])
 
 
 class EmailMessageTestCase(APITestCase):
