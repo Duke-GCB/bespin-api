@@ -451,6 +451,46 @@ class WorkflowVersionTestCase(APITestCase):
             (wf2.id, '5'),
         ])
 
+    @patch('data.api.get_workflow_version_info')
+    def test_version_info_detail(self, mock_get_workflow_version_info):
+        workflow = Workflow.objects.create(name='Workflow', tag='wf')
+        workflow_version = WorkflowVersion.objects.create(
+            workflow=workflow,
+            version='v1.0.0',
+            url='https://example.org/wf.zip',
+            fields=[],
+            version_info_url='https://example.org/info'
+        )
+        mock_get_workflow_version_info.return_value = {
+            'workflow_version': workflow_version,
+            'content': '# content',
+            'content_type': 'text/plain',
+            'url': workflow_version.version_info_url
+        }
+        self.user_login.become_normal_user()
+        url = reverse('workflowversion-list') + '{}/version-info/'.format(workflow_version.id)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['workflow_version'], workflow_version.id)
+        self.assertEqual(response.data['content'], '# content')
+        self.assertEqual(response.data['content_type'], 'text/plain')
+        self.assertEqual(response.data['url'], 'https://example.org/info')
+
+    @patch('data.api.get_workflow_version_info')
+    def test_version_info_detail_no_post(self, mock_get_workflow_version_info):
+        workflow = Workflow.objects.create(name='Workflow', tag='wf')
+        workflow_version = WorkflowVersion.objects.create(
+            workflow=workflow,
+            version='v1.0.0',
+            url='https://example.org/wf.zip',
+            fields=[],
+            version_info_url='https://example.org/info'
+        )
+        self.user_login.become_normal_user()
+        url = reverse('workflowversion-list') + '{}/version-info/'.format(workflow_version.id)
+        response = self.client.post(url, format='json', data={})
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class WorkflowVersionWorkflowStateTestCase(APITestCase):
 
