@@ -6,6 +6,7 @@ from rest_framework import routers
 router = routers.DefaultRouter()
 router.register(r'workflows', data_api.WorkflowsViewSet, 'v2-workflow')
 router.register(r'workflow-versions', api.WorkflowVersionsViewSet, 'v2-workflowversion')
+router.register(r'workflow-version-tool-details', data_api.WorkflowVersionToolDetailsViewSet, 'v2-workflowversiontooldetails')
 router.register(r'workflow-configurations', api.WorkflowConfigurationViewSet, 'v2-workflowconfigurations')
 router.register(r'job-strategies', api.JobStrategyViewSet, 'v2-jobstrategies')
 router.register(r'share-groups', api.ShareGroupViewSet, 'v2-sharegroup')
@@ -26,6 +27,7 @@ router.register(r'admin/job-errors', api.AdminJobErrorViewSet, 'v2-admin_joberro
 router.register(r'admin/job-dds-output-projects', api.AdminJobDDSOutputProjectViewSet, 'v2-admin_jobddsoutputproject')
 router.register(r'admin/share-groups', api.AdminShareGroupViewSet, 'v2-admin_sharegroup')
 router.register(r'admin/workflow-methods-documents', api.WorkflowMethodsDocumentViewSet, 'v2-admin_workflowmethodsdocument')
+router.register(r'admin/workflow-version-tool-details', api.AdminWorkflowVersionToolDetailsViewSet, 'v2-admin_workflowversiontooldetails')
 router.register(r'admin/email-templates', api.AdminEmailTemplateViewSet, 'v2-admin_emailtemplate')
 router.register(r'admin/email-messages', api.AdminEmailMessageViewSet, 'v2-admin_emailmessage')
 

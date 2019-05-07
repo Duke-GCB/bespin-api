@@ -138,6 +138,12 @@ class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = WorkflowMethodsDocumentSerializer
 
 
+class WorkflowVersionToolDetailsViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_class = (permissions.IsAuthenticated,)
+    queryset = WorkflowVersionToolDetails.objects.all()
+    serializer_class = WorkflowVersionToolDetailsSerializer
+
+
 class JobsViewSet(mixins.RetrieveModelMixin,
                   mixins.ListModelMixin,
                   mixins.DestroyModelMixin,
