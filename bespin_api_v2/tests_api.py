@@ -827,7 +827,7 @@ class WorkflowVersionsTestCase(APITestCase):
             'https://github.com/bespin-workflows/gatk2/blob/1/CHANGELOG.md',
         ])
 
-    def testSortedByWorkflowAndVersion(self):
+    def test_sorted_by_workflow_and_version(self):
         self.user_login.become_normal_user()
         url = reverse('v2-workflowversion-list')
         response = self.client.get(url, format='json')
@@ -839,6 +839,17 @@ class WorkflowVersionsTestCase(APITestCase):
             (self.workflow.id, '2.3.1'),
             (self.workflow2.id, '1.0.0-dev'),
         ])
+
+    def test_includes_tool_details(self):
+        details = WorkflowVersionToolDetails.objects.create(
+            workflow_version=self.workflow_version1,
+            details=[{'k':'v'}]
+        )
+        self.user_login.become_admin_user()
+        url = reverse('v2-workflowversion-list') + '{}/'.format(self.workflow_version1.id)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['tool_details'], details.pk)
 
 
 class WorkflowVersionWorkflowStateTestCase(APITestCase):
