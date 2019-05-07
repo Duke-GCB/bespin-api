@@ -41,7 +41,7 @@ class AdminWorkflowVersionViewSet(WorkflowVersionSortedListMixin, CreateListRetr
 
 
 class AdminWorkflowVersionToolDetailsViewSet(CreateListRetrieveModelViewSet):
-    permission_class = (permissions.IsAdminUser,)
+    permission_classes = (permissions.IsAdminUser,)
     serializer_class = WorkflowVersionToolDetailsSerializer
     queryset = WorkflowVersionToolDetails.objects.all()
 
