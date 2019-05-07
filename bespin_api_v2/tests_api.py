@@ -25,14 +25,16 @@ class AdminCreateListRetrieveMixin(object):
     def create_model_object(self):
         raise NotImplemented('Override create_model_object to use this base class')
 
-    def check_single_response(self):
-        raise NotImplemented('Override check_single_response to use this base class')
-
-    def check_list_response(self):
-        raise NotImplemented('Override check_list_response to use this base class')
-
     def build_post_data(self):
         raise NotImplemented('Override build_post_data to use this base class')
+
+    def check_single_response(self, model_object, response_data):
+        raise NotImplemented('Override check_single_response to use this base class')
+
+    # May override
+    def check_list_response(self, model_object, response_data):
+        self.assertEqual(len(response_data), 1, 'Should have one item as one item was created')
+        self.check_single_response(model_object, response_data[0])
 
     # Do not override
     def list_url(self):
@@ -43,8 +45,6 @@ class AdminCreateListRetrieveMixin(object):
 
     def get_model_object(self, pk):
         return self.MODEL_CLS.objects.get(pk=pk)
-
-    # Test methods
 
     def test_list_fails_unauthenticated(self):
         self.user_login.become_unauthorized()
@@ -162,63 +162,47 @@ class AdminWorkflowViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class AdminWorkflowVersionViewSetTestCase(APITestCase):
+class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
+
+    BASE_NAME = 'v2-admin_workflowversion'
+    MODEL_CLS = WorkflowVersion
+
     def setUp(self):
         self.user_login = UserLogin(self.client)
         self.workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
         self.version_change_log = 'https://github.com/bespin-workflows/exomeseq-gatk3/blob/release-4.1/CHANGELOG.md'
 
-    def test_list_fails_unauthenticated(self):
-        self.user_login.become_unauthorized()
-        url = reverse('v2-admin_workflowversion-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-
-    def test_list_fails_not_admin_user(self):
-        self.user_login.become_normal_user()
-        url = reverse('v2-admin_workflowversion-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_list_with_admin_user(self):
-        workflow_version = WorkflowVersion.objects.create(
+    def create_model_object(self):
+        model_object = WorkflowVersion.objects.create(
             workflow=self.workflow,
             description='v1 exomeseq',
             version='1.0.1',
             version_info_url=self.version_change_log,
-            url='',
+            url='https://someurl.com',
             fields=[{"name":"threads", "class": "int"}],
         )
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflowversion-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], workflow_version.id)
-        self.assertEqual(response.data[0]['workflow'], self.workflow.id)
-        self.assertEqual(response.data[0]['description'], 'v1 exomeseq')
-        self.assertEqual(response.data[0]['version'], '1.0.1')
-        self.assertEqual(response.data[0]['version_info_url'], self.version_change_log)
-        self.assertEqual(response.data[0]['fields'], [{"name": "threads", "class": "int"}])
+        return model_object
 
-    def test_retrieve_with_admin_user(self):
-        workflow_version = WorkflowVersion.objects.create(
-            workflow=self.workflow,
-            description='v1 exomeseq',
-            version='v1',
-            url='',
-            fields=[{"name":"threads", "class": "int"}],
-        )
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflowversion-list') + str(workflow_version.id) + '/'
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], workflow_version.id)
-        self.assertEqual(response.data['workflow'], self.workflow.id)
-        self.assertEqual(response.data['description'], 'v1 exomeseq')
-        self.assertEqual(response.data['fields'], [{"name": "threads", "class": "int"}])
+    def check_single_response(self, model_object, response_data):
+        self.assertEqual(response_data['id'], model_object.id)
+        self.assertEqual(response_data['workflow'], self.workflow.id)
+        self.assertEqual(response_data['description'], 'v1 exomeseq')
+        self.assertEqual(response_data['version'], '1.0.1')
+        self.assertEqual(response_data['url'], 'https://someurl.com')
+        self.assertEqual(response_data['fields'], [{"name": "threads", "class": "int"}])
 
-    def test_create_with_admin_user(self):
+    def build_post_data(self):
+        return {
+            'workflow': self.workflow.id,
+            'description': 'v1 exomeseq',
+            'version': '1.0.1',
+            'url': 'https://someurl.com',
+            'fields': [{"name": "threads", "class": "int"}],
+        }
+
+    # Additional tests
+
+    def test_create_with_version_change_log(self):
         self.user_login.become_admin_user()
         url = reverse('v2-admin_workflowversion-list')
         response = self.client.post(url, format='json', data={
@@ -226,7 +210,8 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
             'description': 'v1 exomseq',
             'version': '2.0.1',
             'url': 'https://someurl.com',
-            'fields': [{"name":"threads", "class": "int"}],
+            'version_info_url': 'https://someurl.com/changelog',
+            'fields': [{"name": "threads", "class": "int"}],
 
         })
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -235,40 +220,9 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase):
         workflow_versions = WorkflowVersion.objects.all()
         self.assertEqual(len(workflow_versions), 1)
         self.assertEqual(workflow_versions[0].version, '2.0.1')
+        self.assertEqual(workflow_versions[0].version_info_url, 'https://someurl.com/changelog')
         self.assertEqual(workflow_versions[0].fields, [{"name": "threads", "class": "int"}])
 
-        def test_create_with_version_change_log(self):
-            self.user_login.become_admin_user()
-            url = reverse('v2-admin_workflowversion-list')
-            response = self.client.post(url, format='json', data={
-                'workflow': self.workflow.id,
-                'description': 'v1 exomseq',
-                'version': '2.0.1',
-                'url': 'https://someurl.com',
-                'version_info_url': 'https://someurl.com/changelog',
-                'fields': [{"name": "threads", "class": "int"}],
-
-            })
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-            self.assertEqual(response.data['description'], 'v1 exomseq')
-            self.assertEqual(response.data['enable_ui'], False)
-            workflow_versions = WorkflowVersion.objects.all()
-            self.assertEqual(len(workflow_versions), 1)
-            self.assertEqual(workflow_versions[0].version, '2.0.1')
-            self.assertEqual(workflow_versions[0].version_info_url, 'https://someurl.com/changelog')
-            self.assertEqual(workflow_versions[0].fields, [{"name": "threads", "class": "int"}])
-
-    def test_put_fails_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflowversion-list') + '1/'
-        response = self.client.put(url, format='json', data={})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def test_delete_fails_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflowversion-list') + '1/'
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def testSortedByWorkflowAndVersion(self):
         wf1 = Workflow.objects.create(name='workflow1', tag='one')
@@ -345,10 +299,6 @@ class AdminWorkflowConfigurationViewSetTestCase(APITestCase, AdminCreateListRetr
         self.assertEqual(response_data['default_job_strategy'], self.job_strategy.id)
         self.assertEqual(response_data['share_group'], self.share_group.id)
 
-    def check_list_response(self, model_object, response_data):
-        self.assertEqual(len(response_data), 1, 'Should have one item as one item was created')
-        self.check_single_response(model_object, response_data[0])
-
     def build_post_data(self):
         return {
             'workflow': self.workflow.id,
@@ -393,10 +343,6 @@ class AdminWorkflowVersionToolDetailsViewSetTestCase(APITestCase, AdminCreateLis
         self.assertEqual(response_data['id'], model_object.id)
         self.assertEqual(response_data['workflow_version'], self.workflow_version.id)
         self.assertEqual(response_data['details'], self.details)
-
-    def check_list_response(self, model_object, response_data):
-        self.assertEqual(len(response_data), 1, 'Should have one item as one item was created')
-        self.check_single_response(model_object, response_data[0])
 
     def build_post_data(self):
         return {
