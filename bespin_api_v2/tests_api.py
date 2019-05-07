@@ -192,7 +192,7 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMi
         self.assertEqual(workflow_versions[0].fields, [{"name": "threads", "class": "int"}])
 
 
-    def testSortedByWorkflowAndVersion(self):
+    def test_sorted_by_workflow_and_version(self):
         wf1 = Workflow.objects.create(name='workflow1', tag='one')
         wfv_1 = WorkflowVersion.objects.create(workflow=wf1, version="1", url='', fields=[])
         wfv_2_2_2_dev = WorkflowVersion.objects.create(workflow=wf1, version="2.2.2-dev", url='', fields=[])
@@ -212,6 +212,18 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMi
             (wf1.id, '2.2.2-dev'),
             (wf2.id, '5'),
         ])
+
+    def test_includes_tool_details(self):
+        workflow_version = self.create_model_object()
+        details = WorkflowVersionToolDetails.objects.create(
+            workflow_version=workflow_version,
+            details=[{'k':'v'}]
+        )
+        self.user_login.become_admin_user()
+        url = self.object_url(workflow_version.id)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['tool_details'], details.pk)
 
 
 class AdminWorkflowConfigurationViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
