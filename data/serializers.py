@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, Job, DDSJobInputFile, JobFileStageGroup, \
     DDSEndpoint, DDSUserCredential, JobDDSOutputProject, URLJobInputFile, JobError, JobAnswerSet, \
-    JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowMethodsDocument, \
-    EmailTemplate, EmailMessage, JobSettings, CloudSettingsOpenStack, JobActivity
+    JobQuestionnaire, JobFlavor, VMProject, JobToken, ShareGroup, DDSUser, WorkflowVersionToolDetails,\
+    WorkflowMethodsDocument, EmailTemplate, EmailMessage, JobSettings, CloudSettingsOpenStack, JobActivity
 from data.jobusage import JobUsage
 from rest_framework.authtoken.models import Token
 
@@ -32,7 +32,7 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
         model = WorkflowVersion
         resource_name = 'workflow-versions'
         fields = ('id', 'workflow', 'name', 'description', 'type', 'workflow_path', 'created', 'url', 'version',
-                  'version_info_url', 'methods_document', 'fields', 'questionnaires', 'enable_ui', )
+                  'version_info_url', 'methods_document', 'fields', 'questionnaires', 'enable_ui', 'tool_details', )
 
 
 class WorkflowVersionInfoContentsSerializer(serializers.Serializer):
@@ -43,6 +43,14 @@ class WorkflowVersionInfoContentsSerializer(serializers.Serializer):
 
     class Meta:
         resource_name = 'workflow-version-info-contents'
+
+
+class WorkflowVersionToolDetailsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = WorkflowVersionToolDetails
+        resource_name = 'workflow-version-tool-details'
+        fields = ('id', 'workflow_version', 'details',)
 
 
 class WorkflowMethodsDocumentSerializer(serializers.ModelSerializer):
