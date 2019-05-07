@@ -95,71 +95,33 @@ class AdminCreateListRetrieveMixin(object):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class AdminWorkflowViewSetTestCase(APITestCase):
+class AdminWorkflowViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
+
+    BASE_NAME = 'v2-admin_workflow'
+    MODEL_CLS = Workflow
+
     def setUp(self):
         self.user_login = UserLogin(self.client)
 
-    def test_list_fails_unauthenticated(self):
-        self.user_login.become_unauthorized()
-        url = reverse('v2-admin_workflow-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_list_url(self):
+        self.assertEqual(self.list_url(), '/api/v2/admin/workflows/')
 
-    def test_list_fails_not_admin_user(self):
-        self.user_login.become_normal_user()
-        url = reverse('v2-admin_workflow-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_object_url(self):
+        self.assertEqual(self.object_url(3), '/api/v2/admin/workflows/3/')
 
-    def test_list_with_admin_user(self):
-        workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflow-list')
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], workflow.id)
-        self.assertEqual(response.data[0]['name'], 'Exome Seq')
-        self.assertEqual(response.data[0]['tag'], 'exomeseq')
+    def create_model_object(self):
+        model_object = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
+        return model_object
 
-    def test_retrieve_with_admin_user(self):
-        workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflow-list') + str(workflow.id) + '/'
-        response = self.client.get(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], workflow.id)
-        self.assertEqual(response.data['name'], 'Exome Seq')
-        self.assertEqual(response.data['tag'], 'exomeseq')
+    def check_single_response(self, model_object, response_data):
+        self.assertEqual(response_data['id'], model_object.id)
+        self.assertEqual(response_data['tag'], 'exomeseq')
 
-    def test_create_with_admin_user(self):
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflow-list')
-        response = self.client.post(url, format='json', data={
+    def build_post_data(self):
+        return {
             'name': 'Exome Seq',
             'tag': 'exomeseq',
-        })
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], 'Exome Seq')
-        self.assertEqual(response.data['tag'], 'exomeseq')
-        workflows = Workflow.objects.all()
-        self.assertEqual(len(workflows), 1)
-        self.assertEqual(workflows[0].name, 'Exome Seq')
-        self.assertEqual(workflows[0].tag, 'exomeseq')
-
-    def test_put_fails_with_admin_user(self):
-        workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflow-list') + str(workflow.id) + '/'
-        response = self.client.post(url, format='json', data={})
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def test_delete_fails_with_admin_user(self):
-        workflow = Workflow.objects.create(name='Exome Seq', tag='exomeseq')
-        self.user_login.become_admin_user()
-        url = reverse('v2-admin_workflow-list') + str(workflow.id) + '/'
-        response = self.client.delete(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        }
 
 
 class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
