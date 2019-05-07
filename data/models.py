@@ -82,6 +82,14 @@ class WorkflowVersion(models.Model):
         return parts
 
 
+class WorkflowVersionToolDetails(models.Model):
+    workflow_version = models.OneToOneField(WorkflowVersion, related_name='tool_details', null=False)
+    details = JSONField(help_text='JSON array of tool details and versions')
+
+    def __str__(self):
+        return "WorkflowVersionToolDetails - pk: {}, workflow_version: {}".format(self.pk, self.workflow_version)
+
+
 class WorkflowMethodsDocument(models.Model):
     """
     Methods document for a particular workflow version.
