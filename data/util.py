@@ -5,7 +5,7 @@ from ddsc.core.remotestore import RemoteStore
 from ddsc.core.ddsapi import DataServiceError
 from ddsc.core.ddsapi import ContentType
 from ddsc.config import Config
-from gcb_web_auth.utils import get_oauth_token, get_dds_token_from_oauth, get_default_dds_endpoint
+from gcb_web_auth.utils import get_oauth_token, get_default_dds_endpoint
 import requests
 
 
