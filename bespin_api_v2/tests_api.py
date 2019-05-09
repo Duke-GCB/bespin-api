@@ -84,13 +84,13 @@ class AdminCreateListRetrieveMixin(object):
 
     def test_put_fails_with_admin_user(self):
         self.user_login.become_admin_user()
-        url = self.object_url(1)
+        url = self.object_url('placeholder-id')
         response = self.client.put(url, format='json', data={})
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def test_delete_fails_with_admin_user(self):
         self.user_login.become_admin_user()
-        url = self.object_url(2)
+        url = self.object_url('placeholder-id')
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
