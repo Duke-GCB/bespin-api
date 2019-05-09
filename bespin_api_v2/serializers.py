@@ -10,7 +10,8 @@ from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration,
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
 from data.serializers import JobFileStageGroupSerializer, AdminDDSUserCredSerializer, \
     JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
-    WorkflowMethodsDocumentSerializer, JobDDSOutputProjectSerializer, UserSerializer, AdminCloudSettingsSerializer
+    WorkflowMethodsDocumentSerializer, WorkflowVersionToolDetailsSerializer, \
+    JobDDSOutputProjectSerializer, UserSerializer, AdminCloudSettingsSerializer
 from data.jobusage import JobUsage
 
 
@@ -32,10 +33,10 @@ class AdminWorkflowSerializer(serializers.ModelSerializer):
 class AdminWorkflowVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkflowVersion
-        resource_name = 'workflowversions'
+        resource_name = 'workflow-versions'
         fields = ['id', 'workflow', 'description', 'type', 'workflow_path', 'created', 'version', 'version_info_url', 'url',
-                  'fields', 'enable_ui']
-        read_only_fields = ('enable_ui', )
+                  'fields', 'enable_ui', 'tool_details', ]
+        read_only_fields = ('enable_ui', 'tool_details', )
 
 
 class WorkflowVersionSerializer(serializers.ModelSerializer):
@@ -52,7 +53,7 @@ class WorkflowVersionSerializer(serializers.ModelSerializer):
         model = WorkflowVersion
         resource_name = 'workflow-versions'
         fields = ('id', 'workflow', 'name', 'description', 'type', 'workflow_path', 'created', 'url', 'version',
-                  'version_info_url', 'methods_document', 'fields', 'tag', 'enable_ui')
+                  'version_info_url', 'methods_document', 'fields', 'tag', 'enable_ui', 'tool_details', )
 
 
 class WorkflowConfigurationSerializer(serializers.ModelSerializer):

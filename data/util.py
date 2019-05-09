@@ -5,7 +5,8 @@ from ddsc.core.remotestore import RemoteStore
 from ddsc.core.ddsapi import DataServiceError
 from ddsc.core.ddsapi import ContentType
 from ddsc.config import Config
-from gcb_web_auth.utils import get_oauth_token, get_dds_token_from_oauth, get_default_dds_endpoint
+from gcb_web_auth.utils import get_oauth_token, get_default_dds_endpoint
+import base64
 import requests
 
 
@@ -268,3 +269,35 @@ def give_download_permissions(user, project_id, target_dds_user_id):
         data_service.set_user_project_permission(project_id, target_dds_user_id, auth_role='file_downloader')
     except DataServiceError as dse:
         raise WrappedDataServiceException(dse)
+
+
+def base64_encode(content, encoding='utf-8'):
+    """
+    b64encode wrapper to work with str objects instead of bytes
+    base64.b64encode requires a bytes object (not a str), and returns a bytes object (not a str)
+    for JSON serialization we want str
+    :param content: string to base64-encode
+    :param encoding: encoding of the input string
+    :return: base64-encoded string using utf-8 encoding
+
+    """
+    return base64.b64encode(content.encode(encoding)).decode()
+
+
+def get_workflow_version_info(workflow_version):
+    """
+    Fetch the version_info_url from a WorkflowVersion, returning a dictionary with the fetched data and content type
+    :param workflow_version: A WorkflowVersion
+    :return: dict with base64-encoded content and content_type
+    """
+    response = requests.get(workflow_version.version_info_url)
+    response.raise_for_status()
+    content = response.content.decode(response.encoding)
+    b64_content = base64_encode(content, response.encoding)
+    content_type = response.headers.get('Content-Type')
+    return {
+        'workflow_version': workflow_version,
+        'content': b64_content,
+        'content_type': content_type,
+        'url': workflow_version.version_info_url
+    }

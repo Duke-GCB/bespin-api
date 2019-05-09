@@ -6,7 +6,7 @@ from data.models import LandoConnection
 from data.models import JobQuestionnaire, JobQuestionnaireType, JobAnswerSet, JobFlavor, VMProject, JobSettings, \
     CloudSettingsOpenStack, JobRuntimeOpenStack, JobRuntimeStepK8s, JobRuntimeK8s
 from data.models import JobToken
-from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument
+from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument, WorkflowVersionToolDetails
 from data.models import EmailTemplate, EmailMessage
 from data.models import JobActivity
 from data.models import JobStrategy, WorkflowConfiguration
@@ -868,6 +868,38 @@ class WorkflowMethodsDocumentTests(TestCase):
         methods_document = WorkflowMethodsDocument.objects.create(workflow_version=self.workflow_version,
                                                                   content='#Good Stuff\nSome text.')
         self.assertEqual('#Good Stuff\nSome text.', self.workflow_version.methods_document.content)
+
+
+class WorkflowVersionToolDetailsTestCase(TestCase):
+
+    def setUp(self):
+        workflow = Workflow.objects.create(name='Workflow', tag='wf')
+        self.workflow_version = WorkflowVersion.objects.create(
+            workflow=workflow,
+            version='v1.0.0',
+            url=CWL_URL,
+            fields=[],
+            workflow_path='wf.cwl'
+        )
+
+    def test_requires_workflow_version(self):
+        with self.assertRaises(IntegrityError):
+            WorkflowVersionToolDetails.objects.create(workflow_version=None, details=[1])
+
+    def test_one_to_one_unique(self):
+        WorkflowVersionToolDetails.objects.create(workflow_version=self.workflow_version, details=[1])
+        with self.assertRaises(IntegrityError):
+            WorkflowVersionToolDetails.objects.create(workflow_version=self.workflow_version, details=[2])
+
+    def test_requires_details(self):
+        with self.assertRaises(IntegrityError):
+            WorkflowVersionToolDetails.objects.create(workflow_version=self.workflow_version)
+
+    def test_non_blank_details(self):
+        details = WorkflowVersionToolDetails.objects.create(workflow_version=self.workflow_version, details=[])
+        with self.assertRaises(ValidationError) as context:
+            details.clean_fields()
+        self.assertIn('details', context.exception.error_dict)
 
 
 class EmailTemplateTests(TestCase):

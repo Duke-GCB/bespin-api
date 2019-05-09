@@ -1,12 +1,11 @@
 from rest_framework import viewsets, permissions, status, mixins
 from data.util import get_user_projects, get_user_project, get_user_project_content, get_user_folder_content, \
-    get_readme_file_url
+    get_readme_file_url, get_workflow_version_info
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 from data.exceptions import DataServiceUnavailable, WrappedDataServiceException, BespinAPIException, JobTokenException
 from data.models import *
 from django.db import IntegrityError
-
 from data.serializers import *
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import detail_route, list_route
@@ -125,11 +124,24 @@ class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, ExcludeDeprecatedW
     filter_fields = ('workflow', 'enable_ui', 'workflow__state')
     state_filter_field = 'workflow__state'
 
+    @detail_route(methods=['get'], serializer_class=WorkflowVersionInfoContentsSerializer, url_path='version-info')
+    def version_info(self, request, pk=None):
+        version = self.get_queryset().get(pk=pk)
+        info = get_workflow_version_info(version)
+        serializer = self.get_serializer(info)
+        return Response(serializer.data)
+
 
 class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     queryset = WorkflowMethodsDocument.objects.all()
     serializer_class = WorkflowMethodsDocumentSerializer
+
+
+class WorkflowVersionToolDetailsViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_class = (permissions.IsAuthenticated,)
+    queryset = WorkflowVersionToolDetails.objects.all()
+    serializer_class = WorkflowVersionToolDetailsSerializer
 
 
 class JobsViewSet(mixins.RetrieveModelMixin,
