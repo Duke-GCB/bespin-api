@@ -169,7 +169,6 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMi
         }
 
     # Additional tests
-
     def test_create_with_version_change_log(self):
         self.user_login.become_admin_user()
         url = reverse('v2-admin_workflowversion-list')
@@ -190,7 +189,6 @@ class AdminWorkflowVersionViewSetTestCase(APITestCase, AdminCreateListRetrieveMi
         self.assertEqual(workflow_versions[0].version, '2.0.1')
         self.assertEqual(workflow_versions[0].version_info_url, 'https://someurl.com/changelog')
         self.assertEqual(workflow_versions[0].fields, [{"name": "threads", "class": "int"}])
-
 
     def test_sorted_by_workflow_and_version(self):
         wf1 = Workflow.objects.create(name='workflow1', tag='one')
