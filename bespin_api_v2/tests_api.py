@@ -788,8 +788,8 @@ class WorkflowVersionsTestCase(APITestCase):
             fields=[{"name": "threads", "type": "int"}, {"name": "items", "type": "string"}],
         )
 
-    def test_list_filtering(self):
-        user = self.user_login.become_normal_user()
+    def test_list_filter_on_tag(self):
+        self.user_login.become_normal_user()
         url = reverse('v2-workflowversion-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -799,6 +799,18 @@ class WorkflowVersionsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(set([item['description'] for item in response.data]), set(['v1 exomeseq', 'v2 exomeseq']))
+
+    def test_list_filter_on_version(self):
+        self.user_login.become_normal_user()
+        url = reverse('v2-workflowversion-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+        url = reverse('v2-workflowversion-list') + '?version=2.3.1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['description'], 'v2 exomeseq')
 
     def test_get_details_enable_ui(self):
         self.user_login.become_normal_user()
