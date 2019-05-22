@@ -65,7 +65,7 @@ class WorkflowVersionsViewSet(WorkflowVersionSortedListMixin, ExcludeDeprecatedW
     queryset = WorkflowVersion.objects.all()
     serializer_class = WorkflowVersionSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('workflow', 'workflow__tag', 'workflow__state')
+    filter_fields = ('workflow', 'workflow__tag', 'workflow__state', 'version',)
     state_filter_field = 'workflow__state'
 
 
