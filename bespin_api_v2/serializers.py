@@ -225,3 +225,17 @@ class AdminEmailMessageSerializer(serializers.ModelSerializer):
         model = EmailMessage
         resource_name = 'email-messages'
         fields = '__all__'
+
+
+class AdminJobStrategySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobStrategy
+        resource_name = 'job-strategies'
+        fields = '__all__'
+
+
+class AdminCreateJobSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobSettings
+        resource_name = 'job-settings'
+        fields = '__all__'

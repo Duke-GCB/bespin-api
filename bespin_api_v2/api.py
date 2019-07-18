@@ -9,11 +9,13 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     ShareGroupSerializer, JobTemplateValidatingSerializer, AdminJobSerializer, JobFileStageGroupSerializer, \
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, WorkflowVersionToolDetailsSerializer, JobSerializer, \
-    AdminEmailMessageSerializer, AdminEmailTemplateSerializer
+    AdminEmailMessageSerializer, AdminEmailTemplateSerializer, AdminLandoConnectionSerializer, \
+    AdminJobStrategySerializer, AdminCreateJobSettingsSerializer
 from gcb_web_auth.models import DDSUserCredential
 from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
-    Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, WorkflowVersionToolDetails, EmailMessage, EmailTemplate
+    Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, WorkflowVersionToolDetails, EmailMessage, \
+    EmailTemplate, LandoConnection, JobSettings
 from data.exceptions import BespinAPIException
 from data.mailer import EmailMessageSender, JobMailer
 
@@ -193,3 +195,21 @@ class AdminEmailTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = AdminEmailTemplateSerializer
     queryset = EmailTemplate.objects.all()
+
+
+class AdminLandoConnectionViewSet(CreateListRetrieveModelViewSet):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = AdminLandoConnectionSerializer
+    queryset = LandoConnection.objects.all()
+
+
+class AdminJobStrategyViewSet(CreateListRetrieveModelViewSet, mixins.DestroyModelMixin):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = AdminJobStrategySerializer
+    queryset = JobStrategy.objects.all()
+
+
+class AdminJobSettingsViewSet(CreateListRetrieveModelViewSet):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = AdminCreateJobSettingsSerializer
+    queryset = JobSettings.objects.all()
