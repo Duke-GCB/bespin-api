@@ -10,7 +10,7 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, WorkflowVersionToolDetailsSerializer, JobSerializer, \
     AdminEmailMessageSerializer, AdminEmailTemplateSerializer, AdminLandoConnectionSerializer, \
-    AdminJobStrategySerializer, AdminCreateJobSettingsSerializer
+    AdminJobStrategySerializer, AdminJobSettingsSerializer
 from gcb_web_auth.models import DDSUserCredential
 from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
@@ -213,5 +213,5 @@ class AdminJobStrategyViewSet(CreateListRetrieveModelViewSet, mixins.DestroyMode
 
 class AdminJobSettingsViewSet(CreateListRetrieveModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
-    serializer_class = AdminCreateJobSettingsSerializer
+    serializer_class = AdminJobSettingsSerializer
     queryset = JobSettings.objects.all()
