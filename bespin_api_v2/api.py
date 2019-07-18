@@ -207,6 +207,8 @@ class AdminJobStrategyViewSet(CreateListRetrieveModelViewSet, mixins.DestroyMode
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = AdminJobStrategySerializer
     queryset = JobStrategy.objects.all()
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('name',)
 
 
 class AdminJobSettingsViewSet(CreateListRetrieveModelViewSet):

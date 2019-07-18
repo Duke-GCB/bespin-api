@@ -1492,6 +1492,20 @@ class AdminJobStrategyViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin)
         response = self.client.delete(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
+    def test_list_filter_by_name(self):
+        JobStrategy.objects.create(name='default', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        JobStrategy.objects.create(name='better', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        self.user_login.become_normal_user()
+        url = reverse('v2-jobstrategies-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(set([item['name'] for item in response.data]), set(['default', 'better']))
+        response = self.client.get(url + "?name=better", format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(set([item['name'] for item in response.data]), set(['better']))
+
 
 class AdminJobSettingsViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
     BASE_NAME = 'v2-admin_jobsettings'
