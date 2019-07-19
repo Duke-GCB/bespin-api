@@ -1399,3 +1399,150 @@ class EmailTemplateTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         created = EmailTemplate.objects.first()
         self.assertEqual('error-template', created.name)
+
+
+class AdminLandoConnectionViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
+    BASE_NAME = 'v2-admin_landoconnection'
+    MODEL_CLS = LandoConnection
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+
+    def test_list_url(self):
+        self.assertEqual(self.list_url(), '/api/v2/admin/lando-connections/')
+
+    def test_object_url(self):
+        self.assertEqual(self.object_url(3), '/api/v2/admin/lando-connections/3/')
+
+    def create_model_object(self):
+        model_object = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost',
+            username='user1',
+            password='secret',
+            queue_name='lando'
+        )
+        return model_object
+
+    def check_single_response(self, model_object, response_data):
+        self.assertEqual(response_data['id'], model_object.id)
+        self.assertEqual(response_data['cluster_type'], 'k8s')
+
+    def build_post_data(self):
+        return {
+            'cluster_type': LandoConnection.K8S_TYPE,
+            'host': 'somehost',
+            'username': 'user1',
+            'password': 'secret',
+            'queue_name': 'lando'
+        }
+
+
+class AdminJobStrategyViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
+    BASE_NAME = 'v2-admin_jobstrategy'
+    MODEL_CLS = JobStrategy
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        self.job_flavor = JobFlavor.objects.create(name='large')
+        self.lando_connection = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost',
+            username='user1',
+            password='secret',
+            queue_name='lando'
+        )
+        self.job_settings = JobSettings.objects.create(
+            lando_connection=self.lando_connection,
+            job_runtime_k8s=JobRuntimeK8s.objects.create())
+
+    def test_list_url(self):
+        self.assertEqual(self.list_url(), '/api/v2/admin/job-strategies/')
+
+    def test_object_url(self):
+        self.assertEqual(self.object_url(3), '/api/v2/admin/job-strategies/3/')
+
+    def create_model_object(self):
+        model_object = JobStrategy.objects.create(
+            name='mystrategy',
+            job_settings=self.job_settings,
+            job_flavor=self.job_flavor
+        )
+        return model_object
+
+    def check_single_response(self, model_object, response_data):
+        self.assertEqual(response_data['id'], model_object.id)
+        self.assertEqual(response_data['name'], 'mystrategy')
+
+    def build_post_data(self):
+        return {
+            'name': 'mystrategy',
+            'job_settings': self.job_settings.id,
+            'job_flavor': self.job_flavor.id
+        }
+
+    def test_delete_fails_with_admin_user(self):
+        # Admin users are allowed to delete, overriding this test so it will not fail
+        pass
+
+    def test_delete_succeeds_with_admin_user(self):
+        model_object = self.create_model_object()
+        self.user_login.become_admin_user()
+        url = self.object_url(model_object.id)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_list_filter_by_name(self):
+        JobStrategy.objects.create(name='default', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        JobStrategy.objects.create(name='better', job_flavor=self.job_flavor, job_settings=self.job_settings)
+        self.user_login.become_normal_user()
+        url = reverse('v2-jobstrategies-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(set([item['name'] for item in response.data]), set(['default', 'better']))
+        response = self.client.get(url + "?name=better", format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(set([item['name'] for item in response.data]), set(['better']))
+
+
+class AdminJobSettingsViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin):
+    BASE_NAME = 'v2-admin_jobsettings'
+    MODEL_CLS = JobSettings
+
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        self.job_flavor = JobFlavor.objects.create(name='large')
+        self.lando_connection = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost',
+            username='user1',
+            password='secret',
+            queue_name='lando'
+        )
+        self.runtime_k8s = JobRuntimeK8s.objects.create()
+
+    def test_list_url(self):
+        self.assertEqual(self.list_url(), '/api/v2/admin/job-settings/')
+
+    def test_object_url(self):
+        self.assertEqual(self.object_url(3), '/api/v2/admin/job-settings/3/')
+
+    def create_model_object(self):
+        model_object = JobSettings.objects.create(
+            name='mysettings',
+            lando_connection=self.lando_connection,
+            job_runtime_k8s=self.runtime_k8s)
+        return model_object
+
+    def check_single_response(self, model_object, response_data):
+        self.assertEqual(response_data['id'], model_object.id)
+        self.assertEqual(response_data['name'], 'mysettings')
+
+    def build_post_data(self):
+        return {
+            'name': 'mysettings',
+            'lando_connection': self.lando_connection.id,
+            'job_runtime_k8s': self.runtime_k8s.id
+        }

@@ -148,13 +148,15 @@ class AdminLandoConnectionSerializer(serializers.ModelSerializer):
 
 
 class AdminJobSettingsSerializer(serializers.ModelSerializer):
-    job_runtime_openstack = AdminJobRuntimeOpenStack(read_only=True)
-    job_runtime_k8s = AdminJobRuntimeK8s(read_only=True)
-
     class Meta:
         model = JobSettings
         resource_name = 'job-settings'
         fields = '__all__'
+
+
+class AdminJobSettingsWithNestedDataSerializer(AdminJobSettingsSerializer):
+    job_runtime_openstack = AdminJobRuntimeOpenStack(read_only=True)
+    job_runtime_k8s = AdminJobRuntimeK8s(read_only=True)
 
 
 class AdminJobSerializer(serializers.ModelSerializer):
@@ -162,7 +164,7 @@ class AdminJobSerializer(serializers.ModelSerializer):
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
     name = serializers.CharField(required=False)
     user = UserSerializer(read_only=True)
-    job_settings = AdminJobSettingsSerializer(read_only=True)
+    job_settings = AdminJobSettingsWithNestedDataSerializer(read_only=True)
     job_flavor = JobFlavorSerializer(read_only=True)
     class Meta:
         model = Job
@@ -224,4 +226,11 @@ class AdminEmailMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmailMessage
         resource_name = 'email-messages'
+        fields = '__all__'
+
+
+class AdminJobStrategySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobStrategy
+        resource_name = 'job-strategies'
         fields = '__all__'
