@@ -95,3 +95,11 @@ class LandoJob(object):
         for project_id, dds_user_credential in unique_project_user_cred:
             if not has_download_permissions(dds_user_credential, project_id):
                 give_download_permissions(self.user, project_id, dds_user_credential.dds_id)
+
+    def start_debug(self):
+        job = self.get_job()
+        self._make_client().start_debug(self.job_id)
+
+    def cancel_debug(self):
+        job = self.get_job()
+        self._make_client().cancel_debug(self.job_id)

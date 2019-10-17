@@ -18,6 +18,8 @@ from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfigur
     EmailTemplate, LandoConnection, JobSettings
 from data.exceptions import BespinAPIException
 from data.mailer import EmailMessageSender, JobMailer
+from data.lando import LandoJob
+from rest_framework.exceptions import NotFound
 
 
 class CreateListRetrieveModelViewSet(mixins.CreateModelMixin,
@@ -172,6 +174,22 @@ class WorkflowMethodsDocumentViewSet(viewsets.ReadOnlyModelViewSet):
 
 class JobsViewSet(V1JobsViewSet):
     serializer_class = JobSerializer
+
+    @detail_route(methods=['post'], url_path='start-debug')
+    def start_debug(self, request, pk=None):
+        try:
+            LandoJob(pk, request.user).start_debug()
+            return self._serialize_job_response(pk)
+        except Job.DoesNotExist:
+            raise NotFound("Job {} not found.".format(pk))
+
+    @detail_route(methods=['post'], url_path='cancel-debug')
+    def cancel_debug(self, request, pk=None):
+        try:
+            LandoJob(pk, request.user).cancel_debug()
+            return self._serialize_job_response(pk)
+        except Job.DoesNotExist:
+            raise NotFound("Job {} not found.".format(pk))
 
 
 class AdminEmailMessageViewSet(viewsets.ModelViewSet):
