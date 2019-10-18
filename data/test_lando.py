@@ -109,6 +109,18 @@ class LandoJobTests(TestCase):
         with self.assertRaises(ValidationError) as raised_error:
             job.restart()
 
+    @patch('data.lando.LandoJob._make_client')
+    def test_start_debug(self, mock_make_client):
+        job = LandoJob(self.job.id, self.user)
+        job.start_debug()
+        mock_make_client.return_value.start_debug.assert_called_with(self.job.id)
+
+    @patch('data.lando.LandoJob._make_client')
+    def test_cancel_debug(self, mock_make_client):
+        job = LandoJob(self.job.id, self.user)
+        job.cancel_debug()
+        mock_make_client.return_value.cancel_debug.assert_called_with(self.job.id)
+
 
 class LandoConfigTestCase(TestCase):
     @patch('data.lando.LandoConnection', autospec=True)

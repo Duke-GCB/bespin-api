@@ -1210,6 +1210,42 @@ class JobsTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(mock_mail_current_state.called)
 
+    @patch('bespin_api_v2.api.LandoJob')
+    def test_start_debug(self, mock_lando_job):
+        normal_user = self.user_login.become_normal_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=normal_user,
+                                 share_group=self.share_group,
+                                 state=Job.JOB_STATE_AUTHORIZED,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-job-list') + '{}/start-debug/'.format(job.id)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], job.id)
+        mock_lando_job.return_value.start_debug.assert_called_with()
+
+    @patch('bespin_api_v2.api.LandoJob')
+    def test_cancel_debug(self, mock_lando_job):
+        normal_user = self.user_login.become_normal_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=normal_user,
+                                 share_group=self.share_group,
+                                 state=Job.JOB_STATE_AUTHORIZED,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-job-list') + '{}/cancel-debug/'.format(job.id)
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], job.id)
+        mock_lando_job.return_value.cancel_debug.assert_called_with()
+
 
 class EmailMessageTestCase(APITestCase):
 
