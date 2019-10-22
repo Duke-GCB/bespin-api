@@ -111,15 +111,42 @@ class LandoJobTests(TestCase):
 
     @patch('data.lando.LandoJob._make_client')
     def test_start_debug(self, mock_make_client):
+        self.job.state = Job.JOB_STATE_ERROR
+        self.job.save()
         job = LandoJob(self.job.id, self.user)
         job.start_debug()
         mock_make_client.return_value.start_debug.assert_called_with(self.job.id)
+        self.assertEqual(Job.objects.get(pk=self.job.pk).state, Job.JOB_STATE_DEBUG_SETUP)
+
+    @patch('data.lando.LandoJob._make_client')
+    def test_start_debug_in_bad_state(self, mock_make_client):
+        self.job.state = Job.JOB_STATE_RUNNING
+        self.job.save()
+        job = LandoJob(self.job.id, self.user)
+        with self.assertRaises(ValidationError) as raised_exception:
+            job.start_debug()
+        self.assertEqual(raised_exception.exception.detail[0], "A job must be in ERROR state to debug.")
+        mock_make_client.return_value.start_debug.assert_not_called()
 
     @patch('data.lando.LandoJob._make_client')
     def test_cancel_debug(self, mock_make_client):
+        self.job.state = Job.JOB_STATE_DEBUG
+        self.job.save()
         job = LandoJob(self.job.id, self.user)
         job.cancel_debug()
         mock_make_client.return_value.cancel_debug.assert_called_with(self.job.id)
+        self.assertEqual(Job.objects.get(pk=self.job.pk).state, Job.JOB_STATE_DEBUG_CLEANUP)
+
+    @patch('data.lando.LandoJob._make_client')
+    def test_cancel_debug_in_bad_state(self, mock_make_client):
+        self.job.state = Job.JOB_STATE_RUNNING
+        self.job.save()
+        job = LandoJob(self.job.id, self.user)
+        with self.assertRaises(ValidationError) as raised_exception:
+            job.cancel_debug()
+        self.assertEqual(raised_exception.exception.detail[0],
+                         "A job must be in DEBUG or DEBUG_SETUP state to cancel debugging.")
+        mock_make_client.return_value.start_debug.assert_not_called()
 
 
 class LandoConfigTestCase(TestCase):

@@ -2,7 +2,7 @@
 Handles communication with lando server that spawns VMs and runs jobs.
 Also updates job state before sending messages to lando.
 """
-from data.models import Job, LandoConnection
+from data.models import Job, LandoConnection, JobDebugURL
 from lando_messaging.clients import LandoClient
 from rest_framework.exceptions import ValidationError
 from data.util import has_download_permissions, give_download_permissions
@@ -98,8 +98,21 @@ class LandoJob(object):
 
     def start_debug(self):
         job = self.get_job()
+        if job.state != Job.JOB_STATE_ERROR:
+            raise ValidationError("A job must be in ERROR state to debug.")
+        job.state = Job.JOB_STATE_DEBUG_SETUP
+        job.save()
         self._make_client().start_debug(self.job_id)
+        # Lando is expected to setup debug services and will set job to Job.JOB_STATE_DEBUG after doing so
 
     def cancel_debug(self):
         job = self.get_job()
+        if job.state not in [Job.JOB_STATE_DEBUG_SETUP, Job.JOB_STATE_DEBUG]:
+            raise ValidationError("A job must be in DEBUG or DEBUG_SETUP state to cancel debugging.")
+        job.state = Job.JOB_STATE_DEBUG_CLEANUP
+        job.save()
+        try:
+            job.debug_url.delete()
+        except JobDebugURL.DoesNotExist:
+            pass
         self._make_client().cancel_debug(self.job_id)
