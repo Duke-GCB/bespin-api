@@ -10,6 +10,7 @@ from data.models import DDSUser, ShareGroup, WorkflowMethodsDocument, WorkflowVe
 from data.models import EmailTemplate, EmailMessage
 from data.models import JobActivity
 from data.models import JobStrategy, WorkflowConfiguration
+from data.models import JobDebugURL
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -477,6 +478,55 @@ class JobTests(TestCase):
         job.step = Job.JOB_STEP_RECORD_OUTPUT_PROJECT
         job.save()
         self.assertEqual(Job.objects.get(pk=job.pk).step, Job.JOB_STEP_RECORD_OUTPUT_PROJECT)
+
+    def test_debug_state_changes(self):
+        # Create job which should start in new state
+        Job.objects.create(workflow_version=self.workflow_version, user=self.user, job_order=self.sample_json,
+                           share_group=self.share_group, job_settings=self.job_settings, job_flavor=self.job_flavor,
+                           )
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_NEW, job.state)
+
+        # User enters token (authorizes running job)
+        job.state = Job.JOB_STATE_AUTHORIZED
+        job.save()
+        job = Job.objects.first()
+
+        # Set state to create running
+        job.state = Job.JOB_STATE_RUNNING
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_RUNNING, job.state)
+
+        # Set state to ERROR due to an error
+        job.state = Job.JOB_STATE_ERROR
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_ERROR, job.state)
+
+        # Set state to setting up debug service
+        job.state = Job.JOB_STATE_DEBUG_SETUP
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_DEBUG_SETUP, job.state)
+
+        # Set state to debug once the debug service is running
+        job.state = Job.JOB_STATE_DEBUG
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_DEBUG, job.state)
+
+        # Set state to cleaning up debug service
+        job.state = Job.JOB_STATE_DEBUG_CLEANUP
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_DEBUG_CLEANUP, job.state)
+
+        # Set state back to error after debug service cleanup completes
+        job.state = Job.JOB_STATE_ERROR
+        job.save()
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_ERROR, job.state)
 
 
 class JobFileStageGroupTests(TestCase):
@@ -1219,3 +1269,34 @@ class JobRuntimeK8sTestCase(TestCase):
             self.record_output_project_step
         ]
         runtime.save()
+
+
+class JobDebugURLTestCase(TestCase):
+    def setUp(self):
+        workflow = Workflow.objects.create(name='RnaSeq')
+        workflow_version = WorkflowVersion.objects.create(workflow=workflow,
+                                                          workflow_path='#main',
+                                                          version='1',
+                                                          url=CWL_URL,
+                                                          fields=[])
+        user = User.objects.create_user('test_user')
+        sample_json = "{'type': 1}"
+        share_group = ShareGroup.objects.create(name='Results Checkers')
+        job_flavor = JobFlavor.objects.create(name='flavor1')
+        job_settings = create_vm_job_settings()
+        self.job = Job.objects.create(workflow_version=workflow_version, user=user,
+                                      job_order=sample_json,
+                                      share_group=share_group,
+                                      job_settings=job_settings,
+                                      job_flavor=job_flavor)
+
+    def test_create_list_and_delete(self):
+        with self.assertRaises(JobDebugURL.DoesNotExist):
+            Job.objects.get(pk=self.job.pk).debug_url
+
+        job_debug_url = JobDebugURL.objects.create(job=self.job, url='github.com')
+        self.assertEqual(Job.objects.get(pk=self.job.pk).debug_url.url, 'github.com')
+        job_debug_url.delete()
+
+        with self.assertRaises(JobDebugURL.DoesNotExist):
+            Job.objects.get(pk=self.job.pk).debug_url

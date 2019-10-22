@@ -295,6 +295,9 @@ class Job(models.Model):
     JOB_STATE_CANCEL = 'C'
     JOB_STATE_RESTARTING = 'r'
     JOB_STATE_DELETED = 'D'
+    JOB_STATE_DEBUG_SETUP = 'e'
+    JOB_STATE_DEBUG = 'd'
+    JOB_STATE_DEBUG_CLEANUP = 'f'
     JOB_STATES = (
         (JOB_STATE_NEW, 'New'),
         (JOB_STATE_AUTHORIZED, 'Authorized'),
@@ -306,6 +309,9 @@ class Job(models.Model):
         (JOB_STATE_CANCEL, 'Canceled'),
         (JOB_STATE_RESTARTING, 'Restarting'),
         (JOB_STATE_DELETED, 'Deleted'),
+        (JOB_STATE_DEBUG_SETUP, 'Setting up Debug'),
+        (JOB_STATE_DEBUG, 'Debug'),
+        (JOB_STATE_DEBUG_CLEANUP, 'Cleaning up Debug'),
     )
 
     JOB_STEP_CREATE_VM = 'V'
@@ -378,11 +384,23 @@ class Job(models.Model):
         self.state = Job.JOB_STATE_DELETED
         self.save()
 
+    def get_cluster_type(self):
+        return self.job_settings.lando_connection.cluster_type
+
     class Meta:
         ordering = ['created']
 
     def __str__(self):
         return "Job - pk: {} user: '{}' state: '{}' workflow_version.pk: {} ".format(self.pk, self.user, self.get_state_display(), self.workflow_version.pk, )
+
+
+class JobDebugURL(models.Model):
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='debug_url')
+    url = models.URLField(help_text='URL to where a user can debug a job')
+
+    def clean(self):
+        if self.job.state != Job.JOB_STATE_DEBUG:
+            raise ValidationError("job_debug_url can only be created for jobs in DEBUG state.")
 
 
 class JobActivity(models.Model):
