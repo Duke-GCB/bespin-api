@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, \
     ShareGroup, JobFlavor, Job, JobDDSOutputProject, DDSJobInputFile, URLJobInputFile, JobError, DDSUser, \
     WorkflowMethodsDocument, JobSettings, LandoConnection, JobRuntimeOpenStack, JobRuntimeK8s, JobRuntimeStepK8s, \
-    EmailTemplate, EmailMessage
+    EmailTemplate, EmailMessage, JobDebugURL
 from gcb_web_auth.models import DDSEndpoint, DDSUserCredential
 from bespin_api_v2.jobtemplate import JobTemplate, WorkflowVersionConfiguration, JobTemplateValidator, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -159,6 +159,18 @@ class AdminJobSettingsWithNestedDataSerializer(AdminJobSettingsSerializer):
     job_runtime_k8s = AdminJobRuntimeK8s(read_only=True)
 
 
+class JobDebugURLSerializer(serializers.ModelSerializer):
+    def validate_job(self, job):
+        if job.state not in [Job.JOB_STATE_DEBUG_SETUP, Job.JOB_STATE_DEBUG]:
+            raise serializers.ValidationError("A job must be in debug or setting up debug state before creating a JobDebugURL")
+        return job
+
+    class Meta:
+        model = JobDebugURL
+        resource_name = 'job-debug-url'
+        fields = '__all__'
+
+
 class AdminJobSerializer(serializers.ModelSerializer):
     workflow_version = WorkflowVersionSerializer(required=False)
     output_project = JobDDSOutputProjectSerializer(required=False, read_only=True)
@@ -166,12 +178,15 @@ class AdminJobSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     job_settings = AdminJobSettingsWithNestedDataSerializer(read_only=True)
     job_flavor = JobFlavorSerializer(read_only=True)
+    debug_url = JobDebugURLSerializer(read_only=True)
+
     class Meta:
         model = Job
         resource_name = 'jobs'
         fields = ('id', 'workflow_version', 'user', 'name', 'created', 'state', 'step', 'last_updated',
                   'job_settings', 'job_flavor', 'vm_instance_name', 'vm_volume_name', 'vm_volume_mounts', 'job_order',
-                  'output_project', 'stage_group', 'volume_size', 'share_group', 'cleanup_vm', 'fund_code')
+                  'output_project', 'stage_group', 'volume_size', 'share_group', 'cleanup_vm', 'fund_code',
+                  'debug_url', )
         read_only_fields = ('share_group', 'job_settings',)
 
 
@@ -190,6 +205,7 @@ class JobSerializer(serializers.ModelSerializer):
     job_errors = JobErrorSerializer(required=False, read_only=True, many=True)
     run_token = serializers.CharField(required=False, read_only=True, source='run_token.token')
     usage = serializers.SerializerMethodField()
+    debug_url = JobDebugURLSerializer(read_only=True)
 
     def get_usage(self, job):
         """
@@ -212,7 +228,7 @@ class JobSerializer(serializers.ModelSerializer):
         fields = ('id', 'workflow_version', 'user', 'name', 'created', 'state', 'step', 'last_updated',
                   'job_settings', 'vm_instance_name', 'vm_volume_name', 'job_order',
                   'output_project', 'job_errors', 'stage_group', 'volume_size', 'fund_code', 'share_group',
-                  'run_token', 'usage')
+                  'run_token', 'usage', 'debug_url')
 
 
 class AdminEmailTemplateSerializer(serializers.ModelSerializer):

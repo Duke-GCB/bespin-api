@@ -10,12 +10,12 @@ from bespin_api_v2.serializers import AdminWorkflowSerializer, AdminWorkflowVers
     AdminDDSUserCredSerializer, JobErrorSerializer, AdminJobDDSOutputProjectSerializer, AdminShareGroupSerializer, \
     WorkflowMethodsDocumentSerializer, WorkflowVersionToolDetailsSerializer, JobSerializer, \
     AdminEmailMessageSerializer, AdminEmailTemplateSerializer, AdminLandoConnectionSerializer, \
-    AdminJobStrategySerializer, AdminJobSettingsSerializer
+    AdminJobStrategySerializer, AdminJobSettingsSerializer, JobDebugURLSerializer
 from gcb_web_auth.models import DDSUserCredential
 from data.api import JobsViewSet as V1JobsViewSet, WorkflowVersionSortedListMixin, ExcludeDeprecatedWorkflowsMixin
 from data.models import Workflow, WorkflowVersion, JobStrategy, WorkflowConfiguration, JobFileStageGroup, ShareGroup, \
     Job, JobError, JobDDSOutputProject, WorkflowMethodsDocument, WorkflowVersionToolDetails, EmailMessage, \
-    EmailTemplate, LandoConnection, JobSettings
+    EmailTemplate, LandoConnection, JobSettings, JobDebugURL
 from data.exceptions import BespinAPIException
 from data.mailer import EmailMessageSender, JobMailer
 from data.lando import LandoJob
@@ -125,7 +125,7 @@ class AdminJobsViewSet(viewsets.ModelViewSet):
         original_state = self.get_object().state
         serializer.save()
         new_state = self.get_object().state
-        if original_state != new_state:
+        if original_state != new_state and original_state != Job.JOB_STATE_DEBUG_CLEANUP:
             mailer = JobMailer(self.get_object())
             mailer.mail_current_state()
 
@@ -233,3 +233,8 @@ class AdminJobSettingsViewSet(CreateListRetrieveModelViewSet):
     permission_classes = (permissions.IsAdminUser,)
     serializer_class = AdminJobSettingsSerializer
     queryset = JobSettings.objects.all()
+
+class AdminJobDebugURLViewSet(viewsets.ModelViewSet):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = JobDebugURLSerializer
+    queryset = JobDebugURL.objects.all()

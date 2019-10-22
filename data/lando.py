@@ -100,10 +100,12 @@ class LandoJob(object):
         job = self.get_job()
         if job.state != Job.JOB_STATE_ERROR:
             raise ValidationError("A job must be in ERROR state to debug.")
+        if job.get_cluster_type() != LandoConnection.K8S_TYPE:
+            raise ValidationError("Debugging only available for k8s jobs.")
         job.state = Job.JOB_STATE_DEBUG_SETUP
         job.save()
+        # Notify Lando to setup debug service. Lando is expected set job to Job.JOB_STATE_DEBUG.
         self._make_client().start_debug(self.job_id)
-        # Lando is expected to setup debug services and will set job to Job.JOB_STATE_DEBUG after doing so
 
     def cancel_debug(self):
         job = self.get_job()
@@ -115,4 +117,5 @@ class LandoJob(object):
             job.debug_url.delete()
         except JobDebugURL.DoesNotExist:
             pass
+        # Notify Lando to delete debug service. Lando is expected set job back to Job.JOB_STATE_ERROR.
         self._make_client().cancel_debug(self.job_id)

@@ -33,6 +33,7 @@ router.register(r'admin/email-messages', api.AdminEmailMessageViewSet, 'v2-admin
 router.register(r'admin/lando-connections', api.AdminLandoConnectionViewSet, 'v2-admin_landoconnection')
 router.register(r'admin/job-strategies', api.AdminJobStrategyViewSet, 'v2-admin_jobstrategy')
 router.register(r'admin/job-settings', api.AdminJobSettingsViewSet, 'v2-admin_jobsettings')
+router.register(r'admin/job-debug-urls', api.AdminJobDebugURLViewSet, 'v2-admin_jobdebugurls')
 
 urlpatterns = [
     url(r'^', include(router.urls)),

@@ -5,7 +5,8 @@ from rest_framework import status
 from data.tests_api import UserLogin
 from data.models import Workflow, WorkflowVersion, WorkflowConfiguration, JobStrategy, ShareGroup, JobFlavor, \
     JobSettings, CloudSettingsOpenStack, VMProject, JobFileStageGroup, DDSUserCredential, DDSEndpoint, Job, \
-    JobRuntimeK8s, LandoConnection, JobRuntimeStepK8s, EmailMessage, EmailTemplate, WorkflowVersionToolDetails
+    JobRuntimeK8s, LandoConnection, JobRuntimeStepK8s, EmailMessage, EmailTemplate, WorkflowVersionToolDetails, \
+    JobDebugURL
 from data.tests_models import create_vm_job_settings
 from bespin_api_v2.jobtemplate import STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, \
     REQUIRED_ERROR_MESSAGE, PLACEHOLDER_ERROR_MESSAGE
@@ -974,6 +975,44 @@ class JobsTestCase(APITestCase):
         self.assertEqual(job_runtime_openstack['cloud_settings']['name'], 'cloud')
         self.assertEqual(job_runtime_openstack['cloud_settings']['vm_project']['name'], 'project1')
 
+    def test_jobs_list_shows_job_debug_url(self):
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor
+                                 )
+        url = reverse('v2-job-list') + '{}/'.format(job.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['debug_url'], None)
+        JobDebugURL.objects.create(url='http://www.google.com', job=job)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['debug_url']['url'], 'http://www.google.com')
+
+    def test_admin_jobs_list_shows_job_debug_url(self):
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['debug_url'], None)
+        JobDebugURL.objects.create(url='http://www.google.com', job=job)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['debug_url']['url'], 'http://www.google.com')
+
     def test_admin_jobs_list_shows_k8s_job_settings(self):
         admin_user = self.user_login.become_admin_user()
         job = Job.objects.create(name='somejob',
@@ -1158,6 +1197,31 @@ class JobsTestCase(APITestCase):
         self.assertEqual(Job.JOB_STEP_CREATE_VM, job.step)
 
     @patch('bespin_api_v2.api.JobMailer')
+    def test_ad(self, MockJobMailer):
+        """
+        Admin should be able to change job state and job step.
+        """
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                    data={
+                                        'state': Job.JOB_STATE_RUNNING,
+                                        'step': Job.JOB_STEP_CREATE_VM,
+                                    })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        job = Job.objects.first()
+        self.assertEqual(Job.JOB_STATE_RUNNING, job.state)
+        self.assertEqual(Job.JOB_STEP_CREATE_VM, job.step)
+
+    @patch('bespin_api_v2.api.JobMailer')
     def test_mails_when_job_state_changes(self, MockJobMailer):
         mock_mail_current_state = Mock()
         MockJobMailer.return_value.mail_current_state = mock_mail_current_state
@@ -1205,6 +1269,33 @@ class JobsTestCase(APITestCase):
         response = self.client.put(url, format='json',
                                     data={
                                         'state': Job.JOB_STATE_RUNNING,
+                                        'step': Job.JOB_STEP_RUNNING,
+                                    })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(mock_mail_current_state.called)
+
+    @patch('bespin_api_v2.api.JobMailer')
+    def test_does_not_mail_when_job_state_changes_from_debug_cleanup(self, MockJobMailer):
+        mock_mail_current_state = Mock()
+        MockJobMailer.return_value.mail_current_state = mock_mail_current_state
+        """
+        Admin should be able to change job state and job step.
+        """
+        admin_user = self.user_login.become_admin_user()
+        job = Job.objects.create(name='somejob',
+                                 workflow_version=self.workflow_version,
+                                 job_order={},
+                                 user=admin_user,
+                                 share_group=self.share_group,
+                                 state=Job.JOB_STATE_DEBUG_CLEANUP,
+                                 step=Job.JOB_STEP_CREATE_VM,
+                                 job_settings=self.vm_job_settings,
+                                 job_flavor=self.job_flavor,
+                                 )
+        url = reverse('v2-admin_job-list') + '{}/'.format(job.id)
+        response = self.client.put(url, format='json',
+                                    data={
+                                        'state': Job.JOB_STATE_ERROR,
                                         'step': Job.JOB_STEP_RUNNING,
                                     })
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1582,3 +1673,140 @@ class AdminJobSettingsViewSetTestCase(APITestCase, AdminCreateListRetrieveMixin)
             'lando_connection': self.lando_connection.id,
             'job_runtime_k8s': self.runtime_k8s.id
         }
+
+
+class AdminJobDebugURLViewSetTestCase(APITestCase):
+    def setUp(self):
+        self.user_login = UserLogin(self.client)
+        self.other_user = self.user_login.become_other_normal_user()
+        cwl_url = "https://raw.githubusercontent.com/johnbradley/iMADS-worker/master/predict_service/predict-workflow-packed.cwl"
+        self.workflow_version = WorkflowVersion.objects.create(
+            workflow=Workflow.objects.create(name='RnaSeq'),
+            version="v1",
+            url=cwl_url,
+            fields=[])
+        self.job_flavor = JobFlavor.objects.create(name='flavor1', cpus=32, memory='12Gi')
+        self.vm_job_settings = create_vm_job_settings(name='vm')
+        job_runtime_k8s = JobRuntimeK8s.objects.create()
+        job_runtime_k8s.steps = [
+            JobRuntimeStepK8s.objects.create(
+                step_type=JobRuntimeStepK8s.STAGE_DATA_STEP,
+                flavor=self.job_flavor,
+                image_name='myimage',
+                base_command=['download.py']
+            )
+        ]
+        lando_connection = LandoConnection.objects.create(
+            cluster_type=LandoConnection.K8S_TYPE,
+            host='somehost', username='jpb67',
+            password='secret', queue_name='lando')
+        self.k8s_job_settings = JobSettings.objects.create(
+            name='k8s',
+            lando_connection=lando_connection,
+            job_runtime_k8s=job_runtime_k8s)
+        self.share_group = ShareGroup.objects.create(name='Results Checkers')
+        self.job = Job.objects.create(
+            name='somejob',
+            workflow_version=self.workflow_version,
+            job_order={},
+            user=self.other_user,
+            share_group=self.share_group,
+            job_settings=self.vm_job_settings,
+            job_flavor=self.job_flavor)
+        self.debug_url = 'https://github.com/Duke-GCB/bespin-api'
+
+    def test_unauthorized(self):
+        self.user_login.become_unauthorized()
+        url = reverse('v2-admin_jobdebugurls-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_normal_user_forbidden(self):
+        self.user_login.become_normal_user()
+        url = reverse('v2-admin_jobdebugurls-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_user_list(self):
+        job_debug_url = JobDebugURL.objects.create(url='http://www.google.com', job=self.job)
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0], {
+            'id': job_debug_url.id,
+            'url': 'http://www.google.com',
+            'job': job_debug_url.job.id
+        })
+
+    def test_admin_user_get(self):
+        job_debug_url = JobDebugURL.objects.create(url='http://www.google.com', job=self.job)
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list') + '{}/'.format(job_debug_url.id)
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {
+            'id': job_debug_url.id,
+            'url': 'http://www.google.com',
+            'job': job_debug_url.job.id
+        })
+
+    def test_admin_create_in_debug_setup_state(self):
+        self.job.state = Job.JOB_STATE_DEBUG_SETUP
+        self.job.save()
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list')
+        response = self.client.post(url, format='json', data={
+            'url': 'http://www.google.com',
+            'job': self.job.id
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        job_debug_urls = JobDebugURL.objects.all()
+        self.assertEqual(len(job_debug_urls), 1)
+        self.assertEqual(job_debug_urls[0].url, 'http://www.google.com')
+        self.assertEqual(job_debug_urls[0].job, self.job)
+
+    def test_admin_create_in_debug_state(self):
+        self.job.state = Job.JOB_STATE_DEBUG
+        self.job.save()
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list')
+        response = self.client.post(url, format='json', data={
+            'url': 'http://www.google.com',
+            'job': self.job.id
+        })
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        job_debug_urls = JobDebugURL.objects.all()
+        self.assertEqual(len(job_debug_urls), 1)
+        self.assertEqual(job_debug_urls[0].url, 'http://www.google.com')
+        self.assertEqual(job_debug_urls[0].job, self.job)
+
+    def test_admin_create_invalid_states(self):
+        expected_error_message = 'A job must be in debug or setting up debug state before creating a JobDebugURL'
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list')
+        data = {
+            'url': 'http://www.google.com',
+            'job': self.job.id
+        }
+        invalid_job_states = [
+            Job.JOB_STATE_RUNNING,
+            Job.JOB_STATE_ERROR,
+            Job.JOB_STATE_DEBUG_CLEANUP,
+        ]
+        for invalid_state in invalid_job_states:
+            self.job.state = invalid_state
+            self.job.save()
+            response = self.client.post(url, format='json', data=data)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(response.data['job'], [expected_error_message])
+
+    def test_admin_delete(self):
+        job_debug_url = JobDebugURL.objects.create(url='http://www.google.com', job=self.job)
+        self.assertEqual(len(JobDebugURL.objects.all()), 1)
+        self.user_login.become_admin_user()
+        url = reverse('v2-admin_jobdebugurls-list') + '{}/'.format(job_debug_url.id)
+        response = self.client.delete(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(JobDebugURL.objects.all()), 0)
