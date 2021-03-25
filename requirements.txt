@@ -17,6 +17,6 @@ mock==2.0.0
 pbr==1.10.0
 pika==0.10.0
 psycopg2==2.7.3.2
-PyYAML==5.1
+PyYAML==5.4
 requests==2.20.1
 six==1.10.0
